@@ -1,5 +1,8 @@
 import './assets/main.css'
 
+import axios from 'axios'
+axios.defaults.withCredentials = true;
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 
@@ -12,3 +15,4 @@ app.use(createPinia())
 app.use(router)
 
 app.mount('#app')
+
