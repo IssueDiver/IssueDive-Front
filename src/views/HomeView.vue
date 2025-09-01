@@ -5,13 +5,16 @@
 import { ref, onMounted } from 'vue'
 // axios import
 import axios from 'axios'
+
 import { useMock } from '@/config/mockConfig'
+import { useRouter } from 'vue-router'
 
 // Import components
 import IssueList from '@/components/IssueList.vue'
 import IssueForm from '@/components/IssueForm.vue'
 import IssueFilter from '@/components/IssueFilter.vue'
 import LabelManager from '@/components/LabelManager.vue' // 라벨 관리 컴포넌트 임포트
+import { getContrastingTextColor } from '@/utils/colors'; 
 
 // 타입 import
 import type { Issue, IssueFormData, Page } from '@/types/issue'
@@ -27,6 +30,8 @@ const currentPage = ref(0)
 const totalPages = ref(0)
 const pageSize = 10
 const statusFilter = ref('')
+
+const router = useRouter()
 
 // 임시 목업 데이터 함수들
 const fetchMockIssues = async () => {
@@ -213,62 +218,40 @@ onMounted(() => {
   fetchUsers()
   fetchLabels()
 })
+
+// IssueForm으로 이동하는 함수
+const go_to_new_issue_page = () => {
+    // router.push({ name: 'issue-create' }); // '/issues/new' 같은 라우트 필요
+    alert('새 이슈 생성 페이지로 이동합니다. (라우터 설정 필요)');
+}
+
 </script>
-
 <template>
-  <main >
-    <h1>이슈 생성</h1>
-
-    <!-- IssueForm에 사용자, 라벨 리스트 및 submit 이벤트 처리 함수 전달 -->
-    <IssueForm
-      :users="users"
-      :labels="labels"
-      @submit="handleIssueFormSubmit"
-    />
-
-    <!-- 라벨 관리 컴포넌트 추가 -->
-    <LabelManager />
-
-    <br /><br />
-
-    <h1>이슈 목록</h1>
-
-    <IssueFilter @filter="onFilter" />
-
-    <IssueList :issues="issues" />
-
-    <div class="pagination">
-      <button
-        v-for="pageNum in totalPages"
-        :key="pageNum"
-        @click="changePage(pageNum - 1)"
-        :class="{ active: (pageNum - 1) === currentPage }"
+  <div>
+    <div class="flex justify-between items-center mb-4">
+      <IssueFilter @filter="onFilter" />
+      <router-link
+        :to="{ name: 'issue-create' }"
+        class="bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition"
       >
-        {{ pageNum }}
-      </button>
+        New Issue
+  </router-link>
     </div>
-  </main>
+
+    <div class="bg-white border border-gray-200 rounded-lg">
+      <IssueList :issues="issues" />
+    </div>
+
+    <div class="pagination mt-6">
+      </div>
+  </div>
 </template>
 
 <style scoped>
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 1rem;
-}
-
-.pagination button {
-  margin: 0 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--color-border);
-  background-color: var(--color-background);
-  cursor: pointer;
-}
-
+/* 페이지네이션 스타일은 유지하거나 Tailwind로 변경 가능 */
 .pagination button.active {
-  font-weight: bold;
-  background-color: var(--color-primary);
+  background-color: #0969da; /* GitHub 파란색 */
   color: white;
-  border-color: var(--color-primary);
+  border-color: #0969da;
 }
 </style>

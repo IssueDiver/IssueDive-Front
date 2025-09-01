@@ -8,6 +8,8 @@ import axios from 'axios'
 import type { Issue } from '@/types/issue'
 import type { Label } from '@/types/'
 import { useMock } from '@/config/mockConfig'
+import CommentSection from '@/components/CommentSection.vue'
+import { getContrastingTextColor } from '@/utils/colors'; 
 
 // 라우터 및 네비게이션 객체 생성
 const route = useRoute()
@@ -112,57 +114,62 @@ onMounted(() => {
 </script>
 
 <template>
-  <main>
-    <h1>이슈 상세 정보</h1>
-
-    <!-- 로딩 표시 -->
-    <p v-if="loading">로딩 중...</p>
-
-    <!-- 에러 메시지 -->
-    <p v-if="error" class="error">{{ error }}</p>
-
-    <!-- 상세 정보 표시 -->
-    <div v-if="issue && !loading && !error" class="issue-detail">
-      <h2>{{ issue.title }}</h2>
-      <p><strong>설명:</strong> {{ issue.description || '설명 없음' }}</p>
-      <p><strong>상태:</strong> {{ issue.status }}</p>
-
-      <!-- 상태 변경 버튼 -->
-      <div>
-        <button :disabled="issue.status === 'OPEN'" @click="changeIssueStatus('OPEN')">상태 열기 (OPEN)</button>
-        <button :disabled="issue.status === 'CLOSED'" @click="changeIssueStatus('CLOSED')" style="margin-left: 0.5rem;">상태 닫기 (CLOSED)</button>
-      </div>
-
-      <p><strong>작성자 ID:</strong> {{ issue.authorId }}</p>
-      <p><strong>담당자 ID:</strong> {{ issue.assigneeId ?? '없음' }}</p>
-
-      <!-- 라벨 이름과 색상으로 보기 좋게 표시 -->
-      <p><strong>라벨: </strong>
-        <span v-for="labelId in issue.labelIds" :key="labelId" :style="{ color: getLabelById(labelId)?.color || '#000', 'margin-right': '0.5rem' }">
-          {{ getLabelById(labelId)?.name || '알 수 없음' }}
+  <div v-if="loading">
+    <p>Loading...</p>
+  </div>
+  <div v-else-if="issue">
+    <div class="mb-4 pb-4 border-b border-gray-200">
+      <h1 class="text-3xl font-bold text-gray-900">{{ issue.title }} <span class="text-3xl text-gray-400 font-light">#{{ issue.id }}</span></h1>
+      <div class="flex items-center mt-2">
+        <span :class="[issue.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800']"
+              class="px-3 py-1 text-sm font-semibold leading-none rounded-full">
+          {{ issue.status }}
         </span>
-      </p>
-
-      <p><strong>생성일:</strong> {{ new Date(issue.createdAt).toLocaleString() }}</p>
-      <p><strong>수정일:</strong> {{ new Date(issue.updatedAt).toLocaleString() }}</p>
+        <span class="ml-4 text-sm text-gray-600">
+          <strong>{{ issue.author?.username || 'unknown user' }}</strong> opened this issue on {{ new Date(issue.createdAt).toLocaleString() }}
+        </span>
+      </div>
     </div>
 
-    <!-- 뒤로 가기 -->
-    <button @click="$router.back()">뒤로 가기</button>
-  </main>
-</template>
+    <div class="flex flex-col md:flex-row gap-8">
+      <div class="flex-grow">
+        <div class="prose max-w-none p-4 border rounded-md bg-white">
+          <p>{{ issue.description || 'No description provided.' }}</p>
+        </div>
+        <CommentSection :issue-id="issueId" />
+      </div>
 
-<style scoped>
-.error {
-  color: red;
-  margin: 1rem 0;
-}
-.issue-detail {
-  margin: 1rem 0;
-}
-button {
-  margin-top: 1rem;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-}
-</style>
+      <aside class="w-full md:w-64 flex-shrink-0">
+        <div class="p-4 border rounded-md bg-white space-y-4">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-500 mb-2">Assignees</h3>
+             <p>{{ issue.assignee?.username || 'No one assigned' }}</p>
+          </div>
+          <hr/>
+          <div>
+            <h3 class="text-sm font-semibold text-gray-500 mb-2">Labels</h3>
+            <div class="flex flex-wrap gap-2">
+               <span v-for="labelId in issue.labelIds"
+                     :key="labelId"
+                     :style="{ 
+                      backgroundColor: getLabelById(labelId)?.color,
+                      color: getContrastingTextColor(getLabelById(labelId)?.color || '#000000')
+                      }"
+                     class="text-white px-3 py-1 text-xs font-semibold rounded-full shadow-sm">
+                {{ getLabelById(labelId)?.name }}
+              </span>
+            </div>
+          </div>
+           <hr/>
+           <button @click="changeIssueStatus(issue.status === 'OPEN' ? 'CLOSED' : 'OPEN')"
+                   class="w-full text-center py-2 px-4 border rounded-md hover:bg-gray-100 font-semibold text-gray-700">
+              {{ issue.status === 'OPEN' ? 'Close issue' : 'Reopen issue' }}
+           </button>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <div v-else-if="error">
+    <p class="text-red-500">{{ error }}</p>
+  </div>
+</template>

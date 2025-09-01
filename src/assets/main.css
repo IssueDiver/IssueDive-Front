@@ -1,4 +1,32 @@
-@import './base.css';
+@import "tailwindcss";
+
+/* @import "tailwindcss/preflight";  
+@import "tailwindcss/components";
+@import "tailwindcss/utilities"; */
+
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+/* @layer 지시어: Tailwind의 기본 스타일 계층에 사용자 정의 스타일을 추가합니다.
+  이렇게 하면 나중에 유틸리티 클래스로 덮어쓰기가 가능해집니다.
+*/
+@layer base {
+  /* 모든 a 태그에 기본적으로 적용될 스타일 */
+  a {
+    @apply text-blue-600 hover:underline;
+  }
+  
+  /* 모든 h1, h2 태그 등에 기본 스타일을 주고 싶을 때 유용합니다. */
+  h1 {
+    @apply text-2xl font-bold mb-4;
+  }
+  h2 {
+    @apply text-xl font-semibold mb-3;
+  }
+}
+
+/* @import './base.css';
 
 #app {
   max-width: 1280px;
@@ -32,4 +60,4 @@ a,
     grid-template-columns: 1fr 1fr;
     padding: 0 2rem;
   }
-}
+} */

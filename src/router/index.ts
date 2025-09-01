@@ -6,12 +6,18 @@ import IssueDetail from '@/views/IssueDetail.vue' // 상세 페이지 import
 import LabelManager from '@/components/LabelManager.vue' // 라벨 관리 페이지 컴포넌트
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
+import IssueCreateView from '@/views/IssueCreateView.vue'
 
 const routes = [
   {
     path: '/',
     name: 'home',
     component: HomeView
+  },
+  {
+    path: '/issues/new', 
+    name: 'issue-create',
+    component: IssueCreateView
   },
   {
     path: '/issues/:id',

@@ -6,6 +6,7 @@ import { reactive, computed, watch } from 'vue'
 import type { IssueFormData } from '@/types/issue'
 import type { User, Label } from '@/types/index'
 
+// --- Props & Emits ---
 // 부모 컴포넌트로부터 users, labels 받음
 const props = defineProps<{
   users: User[]
@@ -17,6 +18,7 @@ const emit = defineEmits<{
   (e: 'submit', formData: IssueFormData): void
 }>();
 
+// --- State ---
 // 폼 데이터를 reactive 상태로 선언하고 초깃값 설정
 const formData = reactive<IssueFormData>({
   title: '',
@@ -29,6 +31,7 @@ const formData = reactive<IssueFormData>({
 // 제목이 비었는지 여부를 판단하는 계산 속성
 const isTitleValid = computed(() => formData.title.trim().length > 0)
 
+// --- Handlers ---
 // 라벨 입력 문자열 변경 시 labelIds 배열 업데이트 함수
 const onLabelIdsChange = () => {
   formData.labelIds = formData.labelIdsString
@@ -68,84 +71,70 @@ const handleSubmit = () => {
 }
 </script>
 <template>
-  <form @submit.prevent="handleSubmit">
-    <div>
-      <label for="title">제목<span style="color:red;">*</span></label>
-      <input
-        id="title"
-        v-model="formData.title"
-        type="text"
-        placeholder="이슈 제목 입력"
-        required
-      />
-    </div>
+  <form @submit.prevent="handleSubmit" class="mt-6">
+    <div class="flex flex-col md:flex-row gap-8">
 
-    <div>
-      <label for="description">상세 설명</label>
-      <textarea
-        id="description"
-        v-model="formData.description"
-        placeholder="이슈 내용을 상세히 작성"
-      ></textarea>
-    </div>
-
-    <div>
-      <label for="assignee">담당자</label>
-      <select id="assignee" @change="onAssigneeChange" :value="formData.assigneeId ?? ''">
-        <option value="">선택 안함</option>
-        <option v-for="user in props.users" :key="user.id" :value="user.id">
-          {{ user.username }} (ID: {{ user.id }})
-        </option>
-      </select>
-    </div>
-
-    <div>
-      <label>라벨 선택</label>
-      <div>
-        <label
-          v-for="label in props.labels"
-          :key="label.id"
-          style="margin-right: 1rem; cursor: pointer;"
-        >
+      <div class="flex-grow">
+        <div>
+          <label for="title" class="block text-sm font-medium text-gray-700">제목</label>
           <input
-            type="checkbox"
-            :value="label.id"
-            :checked="formData.labelIds.includes(label.id)"
-            @change="toggleLabel(label.id)"
+            id="title"
+            v-model="formData.title"
+            type="text"
+            placeholder="이슈 제목을 입력하세요"
+            required
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
-          <span :style="{ color: label.color }">{{ label.name }}</span>
-        </label>
+        </div>
+
+        <div class="mt-4">
+          <label for="description" class="block text-sm font-medium text-gray-700">상세 설명</label>
+          <textarea
+            id="description"
+            v-model="formData.description"
+            rows="10"
+            placeholder="이슈에 대한 상세한 설명을 작성해주세요. 마크다운을 지원합니다."
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          ></textarea>
+        </div>
       </div>
+
+      <aside class="w-full md:w-64 flex-shrink-0">
+        <div class="p-4 border rounded-md bg-white">
+          <label for="assignee" class="text-sm font-semibold text-gray-600">담당자 (Assignee)</label>
+          <select id="assignee" @change="onAssigneeChange" :value="formData.assigneeId ?? ''" class="mt-2 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+            <option value="">담당자 없음</option>
+            <option v-for="user in props.users" :key="user.id" :value="user.id">
+              {{ user.username }}
+            </option>
+          </select>
+        </div>
+        
+        <div class="mt-4 p-4 border rounded-md bg-white">
+          <h3 class="text-sm font-semibold text-gray-600 mb-2">라벨 (Labels)</h3>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="label in props.labels"
+              :key="label.id"
+              type="button"
+              @click="toggleLabel(label.id)"
+              :class="[
+                'px-3 py-1 text-xs font-semibold rounded-full transition-all duration-150',
+                formData.labelIds.includes(label.id) ? 'text-white shadow-md' : 'hover:opacity-80'
+              ]"
+              :style="{ backgroundColor: label.color, opacity: formData.labelIds.includes(label.id) ? 1 : 0.5 }"
+            >
+              {{ label.name }}
+            </button>
+          </div>
+        </div>
+      </aside>
     </div>
 
-    <button type="submit" :disabled="!isTitleValid">등록 / 수정</button>
+    <div class="mt-8 pt-4 border-t border-gray-200 flex justify-end">
+      <button type="submit" :disabled="!isTitleValid" class="px-6 py-2 font-semibold bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed">
+        이슈 등록
+      </button>
+    </div>
   </form>
 </template>
-
-<style scoped>
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  max-width: 400px;
-}
-label {
-  font-weight: bold;
-}
-input,
-textarea,
-select {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
-}
-button {
-  padding: 0.75rem;
-  font-size: 1rem;
-  cursor: pointer;
-}
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-</style>

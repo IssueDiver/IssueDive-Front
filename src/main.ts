@@ -1,3 +1,4 @@
+// main.ts
 import './assets/main.css'
 
 import axios from 'axios'
