@@ -31,6 +31,7 @@ const totalPages = ref(0)
 const pageSize = 10
 const statusFilter = ref('')
 
+const searchQuery = ref('') 
 const router = useRouter()
 
 // 임시 목업 데이터 함수들
@@ -83,6 +84,9 @@ const fetchIssues = async (page: number = 0) => {
       }
       if (statusFilter.value) {
         params.status = statusFilter.value
+      }
+      if (searchQuery.value) {
+      params.query = searchQuery.value
       }
       const response = await axios.get<{ success: boolean; data: Page<Issue> }>(
         'http://localhost:8080/issues',
@@ -146,6 +150,15 @@ const fetchLabels = async () => {
  */
 const onFilter = (status: string) => {
   statusFilter.value = status
+  currentPage.value = 0
+  fetchIssues(0)
+}
+
+/**
+ * IssueFilter에서 search 이벤트가 발생했을 때 호출될 핸들러
+ */
+const onSearch = (query: string) => {
+  searchQuery.value = query
   currentPage.value = 0
   fetchIssues(0)
 }
@@ -258,7 +271,7 @@ const go_to_new_issue_page = () => {
 <template>
   <div>
     <div class="flex justify-between items-center mb-4">
-      <IssueFilter @filter="onFilter" />
+      <IssueFilter @filter="onFilter" @search="onSearch"/>
       <router-link
         :to="{ name: 'issue-create' }"
         class="bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition"
