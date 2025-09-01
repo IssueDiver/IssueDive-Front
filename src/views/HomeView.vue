@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// HomeView.vue
+// src/views/HomeView.vue
 
 // Vue Composition API import
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 // axios import
 import axios from 'axios'
 
@@ -11,8 +11,8 @@ import { useRouter } from 'vue-router'
 
 // Import components
 import IssueList from '@/components/IssueList.vue'
-import IssueForm from '@/components/IssueForm.vue'
 import IssueFilter from '@/components/IssueFilter.vue'
+import IssueForm from '@/components/IssueForm.vue'
 import LabelManager from '@/components/LabelManager.vue' // 라벨 관리 컴포넌트 임포트
 import { getContrastingTextColor } from '@/utils/colors'; 
 
@@ -212,11 +212,40 @@ const handleIssueFormSubmit = async (formData: IssueFormData & { newLabels?: str
   }
 }
 
+// "데이터가 조합된" 새로운 이슈 목록을 생성하는 computed 속성
+const enrichedIssues = computed(() => {
+  // users와 labels 데이터가 아직 로드되지 않았다면 빈 배열 반환
+  if (!users.value.length || !labels.value.length) {
+    return []
+  }
+
+  // 각 이슈에 대해 필요한 데이터를 조합
+  return issues.value.map(issue => {
+    // 담당자 ID에 해당하는 user 객체 찾기
+    const assignee = users.value.find(user => user.id === issue.assigneeId) || null;
+    
+    // 라벨 ID 목록에 해당하는 label 객체들의 배열 만들기
+    const issueLabels = issue.labelIds
+      .map(labelId => labels.value.find(label => label.id === labelId))
+      .filter(label => label !== undefined) as Label[]; // filter로 undefined 제거
+
+    return {
+      ...issue, // 기존 이슈 데이터 복사
+      assignee, // 찾아낸 담당자 객체 추가
+      labels: issueLabels, // 찾아낸 라벨 객체 배열 추가
+    }
+  })
+})
+
 // 마운트 시 초기 데이터 로드
 onMounted(() => {
-  fetchIssues(0)
-  fetchUsers()
-  fetchLabels()
+  // 라벨과 유저 정보가 있어야 이슈 데이터를 조합할 수 있으므로 먼저 불러옵니다.
+  Promise.all([
+    fetchLabels(),
+    fetchUsers()
+  ]).then(() => {
+    fetchIssues(0);
+  });
 })
 
 // IssueForm으로 이동하는 함수
@@ -239,7 +268,8 @@ const go_to_new_issue_page = () => {
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg">
-      <IssueList :issues="issues" />
+      <!-- <IssueList :issues="issues" /> -->
+       <IssueList :issues="enrichedIssues" />
     </div>
 
     <div class="pagination mt-6">

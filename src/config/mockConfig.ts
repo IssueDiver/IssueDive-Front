@@ -3,7 +3,9 @@
 export const useMock = false;
 
 export const mockUsers = [
-  { id: 1, username: 'testuser', password: 'password123', email: 'testuser@example.com' }
+  { id: 1, username: 'testuser1', password: 'password', email: 'testuser1@example.com' },
+  { id: 2, username: 'testuser2', password: 'password', email: 'testuser2@example.com' },
+  { id: 3, username: 'testuser3', password: 'password', email: 'testuser3@example.com' },
 ]
 
 export interface MockLoginSuccess {

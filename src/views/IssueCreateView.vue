@@ -6,6 +6,7 @@ import axios from 'axios'
 import IssueForm from '@/components/IssueForm.vue'
 import type { IssueFormData } from '@/types/issue'
 import type { User, Label } from '@/types/index'
+import { generateRandomHexColor } from '@/utils/colors'
 
 const router = useRouter()
 
@@ -43,27 +44,56 @@ const fetchInitialData = async () => {
 /**
  * IssueForm 컴포넌트에서 submit 이벤트가 발생했을 때 호출될 핸들러입니다.
  */
-const handleIssueSubmit = async (formData: IssueFormData) => {
+const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[] }) => {
+  console.log('View(부모)가 Form에서 받은 데이터:', formData);
+  
   try {
+    const newLabelIds: number[] = [];
+    
+    // 1. 새로 입력된 라벨 이름이 있다면, 라벨 생성 API를 먼저 호출합니다.
+    if (formData.newLabels && formData.newLabels.length > 0) {
+      console.log(`새 라벨 ${formData.newLabels.join(', ')} 을(를) 생성합니다.`);
+      
+      for (const labelName of formData.newLabels) {
+        try {
+          const res = await axios.post<{ success: boolean, data: Label }>('http://localhost:8080/labels', {
+            name: labelName,
+            color: generateRandomHexColor(), // 랜덤 색상 사용
+            description: ''
+          });
+          if (res.data.success) {
+            newLabelIds.push(res.data.data.id); // 새로 생성된 라벨의 ID를 저장합니다.
+          }
+        } catch (labelError) {
+          console.error(`라벨 '${labelName}' 생성 실패:`, labelError);
+          alert(`라벨 '${labelName}' 생성에 실패했습니다.`);
+          return; // 라벨 생성을 하나라도 실패하면 전체 프로세스를 중단합니다.
+        }
+      }
+    }
+    
+    // 2. 기존에 선택된 라벨 ID와 새로 생성된 라벨 ID를 합칩니다.
+    const allLabelIds = [...formData.labelIds, ...newLabelIds];
+
+    // 3. 최종적으로 합쳐진 라벨 목록으로 이슈 생성 API를 호출합니다.
     const response = await axios.post('http://localhost:8080/issues', {
       title: formData.title,
       description: formData.description,
       assigneeId: formData.assigneeId,
-      // 백엔드가 labels 필드로 숫자 배열을 기대하는 것에 맞춤
-      labels: formData.labelIds,
-    })
+      labels: allLabelIds,
+    });
 
     if (response.data.success) {
       alert('이슈가 성공적으로 생성되었습니다!')
-      // 이슈 생성 후 해당 이슈 상세 페이지로 이동
       const newIssueId = response.data.data.id;
-      router.push({ name: 'issue-detail', params: { id: newIssueId } })
+      // 생성된 이슈의 상세 페이지로 이동합니다.
+      router.push({ name: 'issue-detail', params: { id: newIssueId } });
     } else {
-      alert('이슈 생성에 실패했습니다.')
+      alert('이슈 생성에 실패했습니다.');
     }
   } catch (e) {
-    console.error('Error submitting issue:', e)
-    alert('서버 오류가 발생했습니다.')
+    console.error('Error submitting issue:', e);
+    alert('서버 오류가 발생했습니다.');
   }
 }
 

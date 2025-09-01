@@ -4,16 +4,16 @@
 import type { Comment } from '@/types/comment'
 // 재귀적으로 자기 자신을 사용하기 위해 컴포넌트를 임포트합니다.
 import CommentItem from './CommentItem.vue'
+import { useAuthStore } from '@/stores/auth';
+
+const authStore = useAuthStore(); 
 
 // --- Props ---
-// 이 컴포넌트는 표시할 댓글 객체 하나를 props로 받습니다.
 const props = defineProps<{
   comment: Comment;
 }>();
 
 // --- Emits ---
-// 사용자가 버튼을 클릭했을 때, 어떤 행동을 할지 부모(CommentSection.vue)에게 알립니다.
-// 로직 처리는 부모 컴포넌트에서 모두 담당합니다.
 const emit = defineEmits<{
   (e: 'startEdit', comment: Comment): void;
   (e: 'deleteComment', commentId: number): void;
@@ -21,8 +21,6 @@ const emit = defineEmits<{
 }>();
 
 // --- Event Forwarding Handlers ---
-// 자식 CommentItem 컴포넌트에서 발생한 이벤트를 그대로 부모로 다시 전달(forward)하는
-// 타입이 명시된 핸들러 함수들입니다.
 const forwardStartEdit = (comment: Comment) => {
   emit('startEdit', comment);
 };
@@ -49,11 +47,16 @@ const forwardToggleReplyMode = (id: number) => {
             <span class="font-semibold text-gray-800">{{ comment.author || 'user' }}</span>
             <span class="text-sm text-gray-500 ml-2">commented on {{ new Date(comment.createdAt).toLocaleDateString() }}</span>
           </div>
-          <div class="flex items-center space-x-2">
+
+          <div v-if="authStore.currentUserId === comment.authorId" class="flex items-center space-x-2">
             <button @click="emit('toggleReplyMode', comment.id)" class="text-sm text-gray-500 hover:text-blue-600">답글</button>
             <button @click="emit('startEdit', comment)" class="text-sm text-gray-500 hover:text-blue-600">수정</button>
             <button @click="emit('deleteComment', comment.id)" class="text-sm text-gray-500 hover:text-red-600">삭제</button>
           </div>
+          <div v-else>
+            <button @click="emit('toggleReplyMode', comment.id)" class="text-sm text-gray-500 hover:text-blue-600">답글</button>
+          </div>
+
         </div>
 
         <div class="p-4">

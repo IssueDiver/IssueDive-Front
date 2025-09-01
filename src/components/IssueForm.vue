@@ -2,9 +2,10 @@
 // IssueForm.vue
 
 // Vue Composition API에서 상태관리와 이벤트 처리용
-import { reactive, computed, watch } from 'vue'
+import { reactive, computed, watch, ref } from 'vue'
 import type { IssueFormData } from '@/types/issue'
 import type { User, Label } from '@/types/index'
+import { getContrastingTextColor } from '@/utils/colors' 
 
 // --- Props & Emits ---
 // 부모 컴포넌트로부터 users, labels 받음
@@ -15,8 +16,8 @@ const props = defineProps<{
 
 // 부모 컴포넌트에 submit 이벤트를 보낼 수 있도록 정의
 const emit = defineEmits<{
-  (e: 'submit', formData: IssueFormData): void
-}>();
+  (e: 'submit', formData: IssueFormData & { newLabels: string[] }): void
+}>()
 
 // --- State ---
 // 폼 데이터를 reactive 상태로 선언하고 초깃값 설정
@@ -30,6 +31,10 @@ const formData = reactive<IssueFormData>({
 
 // 제목이 비었는지 여부를 판단하는 계산 속성
 const isTitleValid = computed(() => formData.title.trim().length > 0)
+
+// 새 라벨 입력을 위한 상태
+const newLabelName = ref('')
+const newLabelStrings = ref<string[]>([])
 
 // --- Handlers ---
 // 라벨 입력 문자열 변경 시 labelIds 배열 업데이트 함수
@@ -57,17 +62,47 @@ const onAssigneeChange = (event: Event) => {
   formData.assigneeId = val ? parseInt(val) : null
 }
 
+/**
+ * 새 라벨을 입력하고 Enter를 눌렀을 때 실행되는 함수
+ */
+const addNewLabel = () => {
+  const name = newLabelName.value.trim();
+  if (!name) return; // 입력값이 없으면 아무것도 안 함
 
-// 폼 제출 시 발생하는 함수
+  // 1. 기존 라벨 목록에 같은 이름이 있는지 확인 (대소문자 무시)
+  const existingLabel = props.labels.find(label => label.name.toLowerCase() === name.toLowerCase());
+
+  if (existingLabel) {
+    // 2-1. 같은 이름의 라벨이 존재하면 -> 해당 라벨을 '선택' 상태로 만듭니다.
+    // 이미 선택되어 있지 않은 경우에만 추가
+    if (!formData.labelIds.includes(existingLabel.id)) {
+      formData.labelIds.push(existingLabel.id);
+    }
+  } else {
+    // 2-2. 기존 라벨에 없다면 -> '새로 만들 라벨' 목록에 추가합니다.
+    // 이미 새로 만들 라벨 목록에 없는 경우에만 추가
+    if (!newLabelStrings.value.find(newLabel => newLabel.toLowerCase() === name.toLowerCase())) {
+        newLabelStrings.value.push(name);
+    }
+  }
+
+  newLabelName.value = ''; // 입력창 초기화
+}
+
+/**
+ * 폼 제출 시 새로 생성할 라벨 이름 목록도 함께 emit
+ */
 const handleSubmit = () => {
   if (!isTitleValid.value) {
     alert('제목을 입력해주세요.')
     return
   }
-  // 양방향 바인딩 기반으로 labelIds도 업데이트(버튼 누르기 전에도 반영 보장)
-  onLabelIdsChange()
-  // 부모 컴포넌트로 현재 폼 데이터 전송
-  emit('submit', { ...formData })
+  const submissionData = {
+    ...JSON.parse(JSON.stringify(formData)),
+    newLabels: newLabelStrings.value
+  }
+  console.log('Form에서 부모로 보내는 데이터:', submissionData);
+  emit('submit', submissionData)
 }
 </script>
 <template>
@@ -93,7 +128,7 @@ const handleSubmit = () => {
             id="description"
             v-model="formData.description"
             rows="10"
-            placeholder="이슈에 대한 상세한 설명을 작성해주세요. 마크다운을 지원합니다."
+            placeholder="이슈에 대한 상세한 설명을 작성해주세요."
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           ></textarea>
         </div>
@@ -118,14 +153,27 @@ const handleSubmit = () => {
               :key="label.id"
               type="button"
               @click="toggleLabel(label.id)"
-              :class="[
-                'px-3 py-1 text-xs font-semibold rounded-full transition-all duration-150',
-                formData.labelIds.includes(label.id) ? 'text-white shadow-md' : 'hover:opacity-80'
-              ]"
-              :style="{ backgroundColor: label.color, opacity: formData.labelIds.includes(label.id) ? 1 : 0.5 }"
+              :class="[ 'px-3 py-1 text-xs font-semibold rounded-full transition-all duration-150', formData.labelIds.includes(label.id) ? 'shadow-md' : 'opacity-60 hover:opacity-100']"
+              :style="{ backgroundColor: label.color, color: getContrastingTextColor(label.color) }"
             >
               {{ label.name }}
             </button>
+          </div>
+          
+          <div v-if="newLabelStrings.length > 0" class="flex flex-wrap gap-2 mt-2">
+            <span v-for="name in newLabelStrings" :key="name" class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-200 text-gray-800 animate-pulse">
+              {{ name }} (새 라벨)
+            </span>
+          </div>
+
+          <div class="mt-4">
+            <input 
+              v-model="newLabelName"
+              @keydown.enter.prevent="addNewLabel"
+              type="text" 
+              placeholder="새 라벨 입력 후 Enter"
+              class="block w-full text-xs px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
           </div>
         </div>
       </aside>

@@ -43,3 +43,18 @@ export function getContrastingTextColor(hexColor: string): string {
 
   return resultColor;
 }
+
+/**
+ * 랜덤 hex 색상 코드를 생성합니다.
+ * 너무 밝거나 어두운 색을 피하기 위해 각 채널의 범위를 제한합니다.
+ * @returns 예: '#A4C8F0'
+ */
+export function generateRandomHexColor(): string {
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    // 50 ~ 200 사이의 값을 생성하여 너무 극단적인 색상을 피합니다.
+    const random = Math.floor(Math.random() * 150) + 50;
+    color += ('0' + random.toString(16)).slice(-2);
+  }
+  return color;
+}

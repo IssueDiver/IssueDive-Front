@@ -1,6 +1,15 @@
 <script setup lang="ts">
-// src/App.vue (업데이트된 버전)
+// src/App.vue
+import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
+import { useAuthStore } from './stores/auth';
+
+const authStore = useAuthStore();
+
+// App 컴포넌트가 마운트될 때 (앱 시작 시) 로그인 상태를 확인합니다.
+onMounted(() => {
+  authStore.checkAuthStatus();
+})
 </script>
 
 <template>

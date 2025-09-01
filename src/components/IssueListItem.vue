@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// IssueListItem.vue
+// src/components/IssueListItem.vue
 // 타입 임포트
 import type { Issue } from '@/types/issue'
 import { useRouter } from 'vue-router'
@@ -9,7 +9,12 @@ import { getContrastingTextColor } from '@/utils/colors';
 const router = useRouter()
 
 // 부모 컴포넌트로부터 issue 객체를 받음
-const props = defineProps<{ issue: Issue }>()
+const props = defineProps<{ 
+  issue: Issue & { // Issue 타입에 assignee와 labels를 추가
+    assignee: User | null;
+    labels: Label[];
+  }
+}>()
 
 const labels = props.issue.labelIds || [];
 const assignee = props.issue.assigneeId || null;
