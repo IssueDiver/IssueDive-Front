@@ -43,13 +43,23 @@ const onSearchInput = () => {
 <template>
   <div class="flex items-center border border-gray-300 rounded-md bg-white">
     <div class="flex">
-      <button @click="filterByStatus('OPEN')" 
-              :class="['px-4 py-2 text-sm font-medium border-r border-gray-300', activeFilter === 'OPEN' ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50']"
-              class="rounded-l-md">
+      <button 
+        @click="filterByStatus('')" 
+        :class="['px-4 py-2 text-sm font-medium border-r border-gray-300', activeFilter === '' ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50']"
+        class="rounded-l-md"
+      >
+        All
+      </button>
+      <button 
+        @click="filterByStatus('OPEN')" 
+        :class="['px-4 py-2 text-sm font-medium border-r border-gray-300', activeFilter === 'OPEN' ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50']"
+      >
         Open
       </button>
-      <button @click="filterByStatus('CLOSED')" 
-              :class="['px-4 py-2 text-sm font-medium', activeFilter === 'CLOSED' ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50']">
+      <button 
+        @click="filterByStatus('CLOSED')" 
+        :class="['px-4 py-2 text-sm font-medium', activeFilter === 'CLOSED' ? 'bg-gray-100 font-semibold' : 'hover:bg-gray-50']"
+      >
         Closed
       </button>
     </div>

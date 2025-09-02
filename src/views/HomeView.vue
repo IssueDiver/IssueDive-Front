@@ -29,7 +29,7 @@ const labels = ref<Label[]>([])    // 라벨 리스트
 const currentPage = ref(0)
 const totalPages = ref(0)
 const pageSize = 10
-const statusFilter = ref('')
+const statusFilter = ref('OPEN')
 
 const searchQuery = ref('') 
 const router = useRouter()
