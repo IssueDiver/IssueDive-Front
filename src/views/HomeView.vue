@@ -5,6 +5,7 @@
 import { ref, onMounted, computed } from 'vue'
 // axios import
 import axios from 'axios'
+import api from '@/api'
 
 import { useMock } from '@/config/mockConfig'
 import { useRouter } from 'vue-router'
@@ -90,8 +91,8 @@ const fetchIssues = async (page: number = 0) => {
       if (assigneeFilter.value) params.assigneeId = assigneeFilter.value
       if (labelFilter.value) params.labelIds = [labelFilter.value] 
       
-      const response = await axios.get<{ success: boolean; data: Page<Issue> }>(
-        'http://localhost:8080/issues',
+      const response = await api.get<{ success: boolean; data: Page<Issue> }>(
+        '/issues', // 기본 URL이 인스턴스에 설정되어 있음.
         { params }
       )
       if (response.data.success) {
@@ -115,8 +116,8 @@ const fetchUsers = async () => {
       users.value = await fetchMockUsers();
     }
     else{
-        const response = await axios.get<{ success: boolean; data: User[] }>(
-        'http://localhost:8080/auth/users'
+        const response = await api.get<{ success: boolean; data: User[] }>(
+        '/auth/users'
         )
       if (response.data.success) {
         users.value = response.data.data
@@ -135,8 +136,8 @@ const fetchLabels = async () => {
     if (useMock) {
       labels.value = await fetchMockLabels();
     } else {
-      const response = await axios.get<{ success: boolean; data: Label[] }>(
-        'http://localhost:8080/labels'
+      const response = await api.get<{ success: boolean; data: Label[] }>(
+        '/labels'
       );
       if (response.data.success) {
         labels.value = response.data.data;
@@ -197,7 +198,7 @@ const handleIssueFormSubmit = async (formData: IssueFormData & { newLabels?: str
           continue
         }
         try {
-          const res = await axios.post('http://localhost:8080/labels', {
+          const res = await api.post('/labels', {
             name: labelName,
             color: '#000000', // 기본 색상(필요시 변경)
           })
@@ -216,7 +217,7 @@ const handleIssueFormSubmit = async (formData: IssueFormData & { newLabels?: str
     const allLabelIds = [...formData.labelIds, ...newLabelIds]
 
     // 이슈 생성 API 호출 (라벨 ID 배열 통합해서 전달)
-    const response = await axios.post('http://localhost:8080/issues', {
+    const response = await api.post('/issues', {
       title: formData.title,
       description: formData.description,
       assigneeId: formData.assigneeId,

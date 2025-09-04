@@ -5,6 +5,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import api from '@/api'
 import type { Issue } from '@/types/issue'
 import type { Label, User } from '@/types/'
 import CommentSection from '@/components/CommentSection.vue' // ⭐️ 댓글 컴포넌트 임포트 확인
@@ -43,7 +44,7 @@ const getUserById = (id: number | null) => {
 const changeIssueStatus = async (newStatus: 'OPEN' | 'CLOSED') => {
   if (!issue.value) return
   try {
-    const response = await axios.patch(`http://localhost:8080/issues/${issueId}/status`, { status: newStatus })
+    const response = await api.patch(`/issues/${issueId}/status`, { status: newStatus })
     if (response.data.success && issue.value) {
       issue.value.status = response.data.data.status
       issue.value.updatedAt = response.data.data.updatedAt
@@ -64,7 +65,7 @@ const updateAssignee = async (newAssigneeId: number | null) => {
   showAssigneeDropdown.value = false // 드롭다운 닫기
 
   try {
-    await axios.patch(`http://localhost:8080/issues/${issueId}`, {
+    await api.patch(`/issues/${issueId}`, {
       assigneeId: newAssigneeId
     })
   } catch (err) {
@@ -91,7 +92,7 @@ const toggleLabelAndUpdate = async (labelId: number) => {
   issue.value.labelIds = [...currentLabelIds];
 
   try {
-    await axios.patch(`http://localhost:8080/issues/${issueId}`, {
+    await api.patch(`/issues/${issueId}`, {
       labelIds: issue.value.labelIds
     })
   } catch (err) {
@@ -118,7 +119,7 @@ const createAndApplyLabel = async () => {
 
   try {
     // 1. 새 라벨 생성 API 호출
-    const createResponse = await axios.post<{ success: boolean, data: Label }>('http://localhost:8080/labels', {
+    const createResponse = await api.post<{ success: boolean, data: Label }>('/labels', {
       name: name,
       color: generateRandomHexColor(),
       description: ''
@@ -135,7 +136,7 @@ const createAndApplyLabel = async () => {
       issue.value.labelIds = updatedLabelIds; // 화면 즉시 반영
       
       // 4. 이슈 업데이트 API 호출
-      await axios.patch(`http://localhost:8080/issues/${issueId}`, {
+      await api.patch(`/issues/${issueId}`, {
         labelIds: updatedLabelIds
       });
 
@@ -155,9 +156,9 @@ const fetchIssueDetail = async () => {
   try {
     loading.value = true
     const [issueRes, labelRes, userRes] = await Promise.all([
-      axios.get<{ success: boolean; data: Issue }>(`http://localhost:8080/issues/${issueId}`),
-      axios.get<{ success: boolean; data: Label[] }>('http://localhost:8080/labels'),
-      axios.get<{ success: boolean; data: User[] }>('http://localhost:8080/auth/users')
+      api.get<{ success: boolean; data: Issue }>(`/issues/${issueId}`),
+      api.get<{ success: boolean; data: Label[] }>('/labels'),
+      api.get<{ success: boolean; data: User[] }>('/auth/users')
     ])
     if (issueRes.data.success) issue.value = issueRes.data.data
     if (labelRes.data.success) labels.value = labelRes.data.data

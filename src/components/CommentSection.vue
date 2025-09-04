@@ -4,6 +4,7 @@
 // --- Imports ---
 import { ref, reactive, onMounted } from 'vue'
 import axios from 'axios'
+import api from '@/api'
 import CommentItem from './CommentItem.vue' // 새로 만든 CommentItem 컴포넌트를 임포트합니다.
 import { useMock } from '@/config/mockConfig'
 import type { Comment } from '@/types/comment'
@@ -59,8 +60,8 @@ const fetchComments = async () => {
       comments.value = mockComments
     } else {
       // 백엔드 API 응답 구조에 맞게 수정
-      const response = await axios.get<{ success: boolean; data: Comment[] }>(
-        `http://localhost:8080/issues/${props.issueId}/comments`
+      const response = await api.get<{ success: boolean; data: Comment[] }>(
+        `/issues/${props.issueId}/comments`
       )
       if (response.data.success) {
         comments.value = response.data.data
@@ -80,8 +81,8 @@ const submitComment = async () => {
     return
   }
   try {
-    const response = await axios.post(
-      `http://localhost:8080/issues/${props.issueId}/comments`,
+    const response = await api.post(
+      `/issues/${props.issueId}/comments`,
       { description: newComment.value }
     )
     if (response.data.success) {
@@ -105,8 +106,8 @@ const submitEdit = async (commentId: number) => {
     return
   }
   try {
-    const response = await axios.patch(
-      `http://localhost:8080/issues/${props.issueId}/comments/${commentId}`,
+    const response = await api.patch(
+      `/issues/${props.issueId}/comments/${commentId}`,
       { description: editText.value }
     )
     if (response.data.success) {
@@ -128,8 +129,8 @@ const deleteComment = async (commentId: number) => {
   if (!confirm('댓글을 삭제하시겠습니까?')) return
   try {
     // 백엔드 API가 noContent(204)를 반환하므로 응답 본문 처리는 필요 없을 수 있습니다.
-    await axios.delete(
-      `http://localhost:8080/issues/${props.issueId}/comments/${commentId}`
+    await api.delete(
+      `/issues/${props.issueId}/comments/${commentId}`
     )
     await fetchComments() // 성공 시 목록 새로고침
   } catch(e) {
@@ -148,8 +149,8 @@ const submitReply = async (parentId: number) => {
     return
   }
   try {
-    const response = await axios.post(
-      `http://localhost:8080/issues/${props.issueId}/comments`,
+    const response = await api.post(
+      `/issues/${props.issueId}/comments`,
       { description: text, parentId } // 부모 ID 포함하여 요청
     )
     if (response.data.success) {

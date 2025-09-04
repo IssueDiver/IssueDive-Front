@@ -3,6 +3,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import api from '@/api'
 import IssueForm from '@/components/IssueForm.vue'
 import type { IssueFormData } from '@/types/issue'
 import type { User, Label } from '@/types/index'
@@ -23,8 +24,8 @@ const fetchInitialData = async () => {
     isLoading.value = true
     // Promise.all을 사용해 두 API를 병렬로 호출합니다.
     const [userRes, labelRes] = await Promise.all([
-      axios.get<{ success: boolean; data: User[] }>('http://localhost:8080/auth/users'),
-      axios.get<{ success: boolean; data: Label[] }>('http://localhost:8080/labels')
+      api.get<{ success: boolean; data: User[] }>('/auth/users'),
+      api.get<{ success: boolean; data: Label[] }>('/labels')
     ])
 
     if (userRes.data.success) {
@@ -56,7 +57,7 @@ const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[]
       
       for (const labelName of formData.newLabels) {
         try {
-          const res = await axios.post<{ success: boolean, data: Label }>('http://localhost:8080/labels', {
+          const res = await api.post<{ success: boolean, data: Label }>('/labels', {
             name: labelName,
             color: generateRandomHexColor(), // 랜덤 색상 사용
             description: ''
@@ -76,7 +77,7 @@ const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[]
     const allLabelIds = [...formData.labelIds, ...newLabelIds];
 
     // 3. 최종적으로 합쳐진 라벨 목록으로 이슈 생성 API를 호출합니다.
-    const response = await axios.post('http://localhost:8080/issues', {
+    const response = await api.post('/issues', {
       title: formData.title,
       description: formData.description,
       assigneeId: formData.assigneeId,

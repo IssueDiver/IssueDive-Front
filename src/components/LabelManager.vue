@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue';
 import axios from 'axios';
+import api from '@/api'
 import { getContrastingTextColor } from '@/utils/colors';
 import type { Label } from '@/types/index'
 
@@ -15,7 +16,7 @@ const editingLabel = ref<Label | null>(null);
 // --- API Functions ---
 const fetchLabels = async () => {
   try {
-    const res = await axios.get<{ success: boolean; data: Label[] }>('http://localhost:8080/labels');
+    const res = await api.get<{ success: boolean; data: Label[] }>('/labels');
     if (res.data.success) {
       labels.value = res.data.data;
     }
@@ -30,7 +31,7 @@ const createLabel = async () => {
     return;
   }
   try {
-    const res = await axios.post('http://localhost:8080/labels', newLabel);
+    const res = await api.post('/labels', newLabel);
     if (res.data.success) {
       await fetchLabels(); // 전체 목록을 새로고침하여 최신 상태를 반영
       // 폼 초기화
@@ -58,7 +59,7 @@ const cancelEdit = () => {
 const saveEdit = async () => {
   if (!editingLabel.value) return;
   try {
-    const res = await axios.patch(`http://localhost:8080/labels/${editingLabel.value.id}`, editingLabel.value);
+    const res = await api.patch(`/labels/${editingLabel.value.id}`, editingLabel.value);
     if (res.data.success) {
       await fetchLabels(); // 전체 목록 새로고침
       editingLabel.value = null; // 수정 모드 종료
@@ -74,7 +75,7 @@ const saveEdit = async () => {
 const deleteLabel = async (id: number) => {
   if (!confirm('이 라벨을 삭제하시겠습니까? 이 라벨을 사용하는 모든 이슈에서 제거됩니다.')) return;
   try {
-    await axios.delete(`http://localhost:8080/labels/${id}`);
+    await api.delete(`/labels/${id}`);
     await fetchLabels(); // 성공 시 목록 새로고침
   } catch (e) {
     alert('서버 오류 발생');
