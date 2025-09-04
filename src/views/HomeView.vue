@@ -2,10 +2,11 @@
 // src/views/HomeView.vue
 
 // Vue Composition API import
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, reactive } from 'vue'
 // axios import
 import axios from 'axios'
 import api from '@/api'
+import { useAuthStore } from '@/stores/auth'
 
 import { useMock } from '@/config/mockConfig'
 import { useRouter } from 'vue-router'
@@ -30,14 +31,20 @@ const labels = ref<Label[]>([])    // 라벨 리스트
 const currentPage = ref(0)
 const totalPages = ref(0)
 const pageSize = 6
-const statusFilter = ref('OPEN')
-const searchQuery = ref('') 
+
+// API 요청을 위한 파라미터를 하나의 반응형 객체로 관리
+const apiParams = reactive({
+  status: 'OPEN', // 기본값
+  query: '',
+  authorId: null as number | null,
+  assigneeId: null as number | null,
+  labelId: null as number | null,
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
+})
+
+const authStore = useAuthStore() 
 const router = useRouter()
-const authorFilter = ref<number | null>(null)
-const assigneeFilter = ref<number | null>(null)
-const labelFilter = ref<number | null>(null)
-const sortBy = ref('createdAt')
-const sortOrder = ref('desc')
 
 // 임시 목업 데이터 함수들
 const fetchMockIssues = async () => {
@@ -86,19 +93,18 @@ const fetchIssues = async (page: number = 0) => {
       const params: Record<string, any> = {
         page,
         size: pageSize,
-        sort: sortBy.value,
-        order: sortOrder.value,
+        sort: apiParams.sortBy,
+        order: apiParams.sortOrder,
       }
-      if (statusFilter.value) params.status = statusFilter.value
-      if (searchQuery.value) params.query = searchQuery.value
-      if (authorFilter.value) params.authorId = authorFilter.value
-      if (assigneeFilter.value) params.assigneeId = assigneeFilter.value
-      if (labelFilter.value) params.labelIds = [labelFilter.value] 
-      
-      const response = await api.get<{ success: boolean; data: Page<Issue> }>(
-        '/issues', // 기본 URL이 인스턴스에 설정되어 있음.
-        { params }
-      )
+      // 값이 있는 필터만 파라미터에 추가
+      if (apiParams.status) params.status = apiParams.status
+      if (apiParams.query) params.query = apiParams.query
+      if (apiParams.authorId) params.authorId = apiParams.authorId
+      if (apiParams.assigneeId) params.assigneeId = apiParams.assigneeId
+      if (apiParams.labelId) params.labelIds = [apiParams.labelId]
+
+      const response = await api.get<{ success: boolean; data: Page<Issue> }>('/issues', { params })
+
       if (response.data.success) {
         const pageData = response.data.data
         issues.value = pageData.content
@@ -152,31 +158,36 @@ const fetchLabels = async () => {
   }
 };
 
-/**
- * 필터 상태 변경 핸들러
- */
-const onFilter = (status: string) => {
-  statusFilter.value = status
-  currentPage.value = 0
-  fetchIssues(0)
-}
+
+// --- 이벤트 핸들러 변경점 ---
 
 /**
  * IssueFilter에서 search 이벤트가 발생했을 때 호출될 핸들러
  */
 const onSearch = (query: string) => {
-  searchQuery.value = query
+  apiParams.query = query
   currentPage.value = 0
   fetchIssues(0)
 }
+
+// 디바운싱 로직이 포함된 onSearchInput 핸들러
+let debounceTimer: number
+const onSearchInput = () => {
+  clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => {
+    currentPage.value = 0
+    fetchIssues(0) // apiParams.query는 v-model을 통해 이미 최신 상태입니다.
+  }, 500)
+}
+
 
 /**
  * 정렬 변경을 처리할 핸들러
  */
 const onSort = (sortOptions: { sortBy: string; sortOrder: string }) => {
-  sortBy.value = sortOptions.sortBy
-  sortOrder.value = sortOptions.sortOrder
-  fetchIssues(0) // 정렬 기준 변경 시 첫 페이지부터 다시 조회
+  apiParams.sortBy = sortOptions.sortBy
+  apiParams.sortOrder = sortOptions.sortOrder
+  fetchIssues(0)
 }
 
 /**
@@ -188,11 +199,26 @@ const changePage = (pageNum: number) => {
   fetchIssues(pageNum)
 }
 
-const onApplyFilters = (filters: { authorId: number | null; assigneeId: number | null; labelId: number | null }) => {
-  authorFilter.value = filters.authorId
-  assigneeFilter.value = filters.assigneeId
-  labelFilter.value = filters.labelId
-  currentPage.value = 0 // 필터 변경 시 첫 페이지로 이동
+// 4. 통합 필터 적용 핸들러
+const onApplyFilters = (filters: { view: string; status: string; labelId: number | null }) => {
+  const loggedInUserId = authStore.user?.id
+
+  // View 값에 따라 authorId와 assigneeId 설정
+  apiParams.authorId = null
+  apiParams.assigneeId = null
+
+  if (filters.view === 'CREATED_BY_ME') {
+    apiParams.authorId = loggedInUserId || null
+  } else if (filters.view === 'ASSIGNED_TO_ME') {
+    apiParams.assigneeId = loggedInUserId || null
+  }
+
+  // Status와 LabelId 설정
+  apiParams.status = filters.status
+  apiParams.labelId = filters.labelId
+
+  // 필터 변경 시 첫 페이지부터 다시 조회
+  currentPage.value = 0
   fetchIssues(0)
 }
 
@@ -294,23 +320,34 @@ const go_to_new_issue_page = () => {
 </script>
 <template>
   <div>
-    <div class="flex justify-between items-start mb-4 gap-4">
-      <IssueFilter 
-        class="flex-grow"
-        :users="users" 
-        :labels="labels"
-        @filter="onFilter" 
-        @search="onSearch"
-        @apply-filters="onApplyFilters"
-        @sort="onSort" 
-      />
-      
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold text-gray-800">Issues</h1>
       <router-link
         :to="{ name: 'issue-create' }"
         class="flex-shrink-0 bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition"
       >
         New Issue
       </router-link>
+    </div>
+
+    <IssueFilter
+      class="mb-4"
+      :users="users"
+      :labels="labels"
+      @apply-filters="onApplyFilters"
+      @sort="onSort"
+    />
+
+    <div class="relative flex-grow mb-4">
+      <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5 text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+      </span>
+      <input 
+        v-model="apiParams.query" 
+        @input="onSearchInput"
+        class="w-full pl-10 pr-4 py-2 border border-gray-300 focus:outline-none rounded-md" 
+        placeholder="Search by title, author, label..." 
+      />
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg">
@@ -325,7 +362,6 @@ const go_to_new_issue_page = () => {
       >
         &laquo; Previous
       </button>
-
       <button
         v-for="pageNum in totalPages"
         :key="pageNum - 1"
@@ -339,7 +375,6 @@ const go_to_new_issue_page = () => {
       >
         {{ pageNum }}
       </button>
-
       <button
         v-if="currentPage < totalPages - 1"
         @click="changePage(currentPage + 1)"
@@ -348,14 +383,13 @@ const go_to_new_issue_page = () => {
         Next &raquo;
       </button>
     </div>
-
   </div>
 </template>
 
 <style scoped>
 /* 페이지네이션 스타일은 유지하거나 Tailwind로 변경 가능 */
 .pagination button.active {
-  background-color: #0969da; /* GitHub 파란색 */
+  background-color: #0969da;
   color: white;
   border-color: #0969da;
 }
