@@ -287,6 +287,9 @@ const enrichedIssues = computed(() => {
     // 담당자 ID에 해당하는 user 객체 찾기
     const assignee = users.value.find(user => user.id === issue.assigneeId) || null;
     
+    // 작성자 ID에 해당하는 user 객체 찾기
+    const author = users.value.find(user => user.id === issue.authorId) || null;
+
     // 라벨 ID 목록에 해당하는 label 객체들의 배열 만들기
     const issueLabels = issue.labelIds
       .map(labelId => labels.value.find(label => label.id === labelId))
@@ -294,6 +297,7 @@ const enrichedIssues = computed(() => {
 
     return {
       ...issue, // 기존 이슈 데이터 복사
+      author,
       assignee, // 찾아낸 담당자 객체 추가
       labels: issueLabels, // 찾아낸 라벨 객체 배열 추가
     }
