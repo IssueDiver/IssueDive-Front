@@ -3,6 +3,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from '@/types'
+import router from '@/router'
 
 // 'auth'라는 이름의 스토어를 정의합니다.
 export const useAuthStore = defineStore('auth', () => {
@@ -33,11 +34,14 @@ export const useAuthStore = defineStore('auth', () => {
    * state와 localStorage에서 사용자 정보를 모두 제거합니다.
    */
   function logout() {
+    // Pinia 상태 초기화
     user.value = null;
     accessToken.value = null;
     // localStorage에서 정보 제거
     localStorage.removeItem('user');
     localStorage.removeItem('accessToken');
+    // 로그인 페이지로 리디렉션
+    router.push({ name: 'login', replace: true });
   }
 
 

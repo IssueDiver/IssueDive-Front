@@ -21,7 +21,26 @@ const authStore = useAuthStore();
           <RouterLink to="/" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Issues</RouterLink>
           <RouterLink to="/labels" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Labels</RouterLink>
         </nav>
-      </div>
+
+        <div class="ml-auto flex items-center">
+          <div v-if="authStore.isAuthenticated">
+            <button 
+              @click="authStore.logout()" 
+              class="bg-gray-600 bg-gray-600 text-white px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Logout
+            </button>
+          </div>
+          <div v-else>
+            <RouterLink 
+              to="/login" 
+              class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium"
+            >
+              Login
+            </RouterLink>
+          </div>
+        </div>
+        </div>
     </header>
 
     <main class="container mx-auto px-4 py-8">
