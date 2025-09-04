@@ -29,13 +29,15 @@ const labels = ref<Label[]>([])    // 라벨 리스트
 // 페이지, 필터 변수
 const currentPage = ref(0)
 const totalPages = ref(0)
-const pageSize = 10
+const pageSize = 6
 const statusFilter = ref('OPEN')
 const searchQuery = ref('') 
 const router = useRouter()
 const authorFilter = ref<number | null>(null)
 const assigneeFilter = ref<number | null>(null)
 const labelFilter = ref<number | null>(null)
+const sortBy = ref('createdAt')
+const sortOrder = ref('desc')
 
 // 임시 목업 데이터 함수들
 const fetchMockIssues = async () => {
@@ -84,6 +86,8 @@ const fetchIssues = async (page: number = 0) => {
       const params: Record<string, any> = {
         page,
         size: pageSize,
+        sort: sortBy.value,
+        order: sortOrder.value,
       }
       if (statusFilter.value) params.status = statusFilter.value
       if (searchQuery.value) params.query = searchQuery.value
@@ -164,6 +168,15 @@ const onSearch = (query: string) => {
   searchQuery.value = query
   currentPage.value = 0
   fetchIssues(0)
+}
+
+/**
+ * 정렬 변경을 처리할 핸들러
+ */
+const onSort = (sortOptions: { sortBy: string; sortOrder: string }) => {
+  sortBy.value = sortOptions.sortBy
+  sortOrder.value = sortOptions.sortOrder
+  fetchIssues(0) // 정렬 기준 변경 시 첫 페이지부터 다시 조회
 }
 
 /**
@@ -289,6 +302,7 @@ const go_to_new_issue_page = () => {
         @filter="onFilter" 
         @search="onSearch"
         @apply-filters="onApplyFilters"
+        @sort="onSort" 
       />
       
       <router-link
@@ -303,8 +317,38 @@ const go_to_new_issue_page = () => {
        <IssueList :issues="enrichedIssues" />
     </div>
 
-    <div class="pagination mt-6">
+    <div class="pagination mt-6 flex justify-center items-center gap-2">
+      <button
+        v-if="currentPage > 0"
+        @click="changePage(currentPage - 1)"
+        class="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+      >
+        &laquo; Previous
+      </button>
+
+      <button
+        v-for="pageNum in totalPages"
+        :key="pageNum - 1"
+        @click="changePage(pageNum - 1)"
+        :class="[
+          'px-3 py-1 text-sm font-medium border rounded-md',
+          currentPage === pageNum - 1
+            ? 'bg-blue-600 text-white border-blue-600'
+            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+        ]"
+      >
+        {{ pageNum }}
+      </button>
+
+      <button
+        v-if="currentPage < totalPages - 1"
+        @click="changePage(currentPage + 1)"
+        class="px-3 py-1 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+      >
+        Next &raquo;
+      </button>
     </div>
+
   </div>
 </template>
 
