@@ -30,9 +30,11 @@ const currentPage = ref(0)
 const totalPages = ref(0)
 const pageSize = 10
 const statusFilter = ref('OPEN')
-
 const searchQuery = ref('') 
 const router = useRouter()
+const authorFilter = ref<number | null>(null)
+const assigneeFilter = ref<number | null>(null)
+const labelFilter = ref<number | null>(null)
 
 // 임시 목업 데이터 함수들
 const fetchMockIssues = async () => {
@@ -82,12 +84,12 @@ const fetchIssues = async (page: number = 0) => {
         page,
         size: pageSize,
       }
-      if (statusFilter.value) {
-        params.status = statusFilter.value
-      }
-      if (searchQuery.value) {
-      params.query = searchQuery.value
-      }
+      if (statusFilter.value) params.status = statusFilter.value
+      if (searchQuery.value) params.query = searchQuery.value
+      if (authorFilter.value) params.authorId = authorFilter.value
+      if (assigneeFilter.value) params.assigneeId = assigneeFilter.value
+      if (labelFilter.value) params.labelIds = [labelFilter.value] 
+      
       const response = await axios.get<{ success: boolean; data: Page<Issue> }>(
         'http://localhost:8080/issues',
         { params }
@@ -170,6 +172,14 @@ const changePage = (pageNum: number) => {
   if (pageNum === currentPage.value) return
   currentPage.value = pageNum
   fetchIssues(pageNum)
+}
+
+const onApplyFilters = (filters: { authorId: number | null; assigneeId: number | null; labelId: number | null }) => {
+  authorFilter.value = filters.authorId
+  assigneeFilter.value = filters.assigneeId
+  labelFilter.value = filters.labelId
+  currentPage.value = 0 // 필터 변경 시 첫 페이지로 이동
+  fetchIssues(0)
 }
 
 /**
@@ -270,23 +280,30 @@ const go_to_new_issue_page = () => {
 </script>
 <template>
   <div>
-    <div class="flex justify-between items-center mb-4">
-      <IssueFilter @filter="onFilter" @search="onSearch"/>
+    <div class="flex justify-between items-start mb-4 gap-4">
+      <IssueFilter 
+        class="flex-grow"
+        :users="users" 
+        :labels="labels"
+        @filter="onFilter" 
+        @search="onSearch"
+        @apply-filters="onApplyFilters"
+      />
+      
       <router-link
         :to="{ name: 'issue-create' }"
-        class="bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition"
+        class="flex-shrink-0 bg-green-600 text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 transition"
       >
         New Issue
-  </router-link>
+      </router-link>
     </div>
 
     <div class="bg-white border border-gray-200 rounded-lg">
-      <!-- <IssueList :issues="issues" /> -->
        <IssueList :issues="enrichedIssues" />
     </div>
 
     <div class="pagination mt-6">
-      </div>
+    </div>
   </div>
 </template>
 
