@@ -37,8 +37,8 @@ const apiParams = reactive({
   status: 'OPEN', // 기본값
   query: '',
   authorId: null as number | null,
-  assigneeId: null as number | null,
-  labelId: null as number | null,
+  assigneeIds: [] as number[], 
+  labelIds: [] as number[], 
   sortBy: 'createdAt',
   sortOrder: 'desc',
 })
@@ -85,9 +85,9 @@ const fetchMockLabels = async () => {
 const fetchIssues = async (page: number = 0) => {
   try {
     if (useMock) {
-      issues.value = await fetchMockIssues();
-      totalPages.value = 1;
-      currentPage.value = 0;
+      // issues.value = await fetchMockIssues();
+      // totalPages.value = 1;
+      // currentPage.value = 0;
     } 
     else {
       const params: Record<string, any> = {
@@ -100,8 +100,8 @@ const fetchIssues = async (page: number = 0) => {
       if (apiParams.status) params.status = apiParams.status
       if (apiParams.query) params.query = apiParams.query
       if (apiParams.authorId) params.authorId = apiParams.authorId
-      if (apiParams.assigneeId) params.assigneeId = apiParams.assigneeId
-      if (apiParams.labelId) params.labelIds = [apiParams.labelId]
+      if (apiParams.assigneeIds.length > 0) params.assigneeIds = apiParams.assigneeIds // axios는 배열을 자동으로 ?assigneeIds=1&assigneeIds=2 형태로 변환해줍니다.
+      if (apiParams.labelIds.length > 0) params.labelIds = apiParams.labelIds
 
       const response = await api.get<{ success: boolean; data: Page<Issue> }>('/issues', { params })
 
@@ -203,19 +203,24 @@ const changePage = (pageNum: number) => {
 const onApplyFilters = (filters: { view: string; status: string; labelId: number | null }) => {
   const loggedInUserId = authStore.user?.id
 
-  // View 값에 따라 authorId와 assigneeId 설정
+  // 필터 초기화
   apiParams.authorId = null
-  apiParams.assigneeId = null
+  apiParams.assigneeIds = [] // 빈 배열로 초기화
 
+  // View 값에 따라 authorId 또는 assigneeIds 설정
   if (filters.view === 'CREATED_BY_ME') {
     apiParams.authorId = loggedInUserId || null
   } else if (filters.view === 'ASSIGNED_TO_ME') {
-    apiParams.assigneeId = loggedInUserId || null
+    // 로그인한 사용자의 ID를 배열에 담아 할당
+    if (loggedInUserId) {
+      apiParams.assigneeIds = [loggedInUserId]
+    }
   }
 
   // Status와 LabelId 설정
   apiParams.status = filters.status
-  apiParams.labelId = filters.labelId
+  // 단일 라벨 필터링의 경우, 배열에 담아서 할당
+  apiParams.labelIds = filters.labelId ? [filters.labelId] : []
 
   // 필터 변경 시 첫 페이지부터 다시 조회
   currentPage.value = 0
@@ -279,30 +284,37 @@ const handleIssueFormSubmit = async (formData: IssueFormData & { newLabels?: str
 const enrichedIssues = computed(() => {
   // users와 labels 데이터가 아직 로드되지 않았다면 빈 배열 반환
   if (!users.value.length || !labels.value.length) {
-    return []
+    return issues.value.map(issue => ({
+      ...issue,
+      author: null,
+      assignees: [], 
+      labels: []
+    }));
   }
 
   // 각 이슈에 대해 필요한 데이터를 조합
   return issues.value.map(issue => {
-    // 담당자 ID에 해당하는 user 객체 찾기
-    const assignee = users.value.find(user => user.id === issue.assigneeId) || null;
-    
-    // 작성자 ID에 해당하는 user 객체 찾기
-    const author = users.value.find(user => user.id === issue.authorId) || null;
+      // 작성자 ID에 해당하는 user 객체 찾기
+      const author = users.value.find(user => user.id === issue.authorId) || null;
 
-    // 라벨 ID 목록에 해당하는 label 객체들의 배열 만들기
-    const issueLabels = issue.labelIds
-      .map(labelId => labels.value.find(label => label.id === labelId))
-      .filter(label => label !== undefined) as Label[]; // filter로 undefined 제거
+      // 담당자 ID '배열'을 순회하며 해당하는 user '배열'을 만들기
+      const assignees = issue.assigneeIds
+        .map(assigneeId => users.value.find(user => user.id === assigneeId))
+        .filter(user => user !== undefined) as User[]; // filter로 undefined 제거
 
-    return {
-      ...issue, // 기존 이슈 데이터 복사
-      author,
-      assignee, // 찾아낸 담당자 객체 추가
-      labels: issueLabels, // 찾아낸 라벨 객체 배열 추가
-    }
+      // 라벨 ID 목록에 해당하는 label 객체들의 배열 만들기
+      const issueLabels = issue.labelIds
+        .map(labelId => labels.value.find(label => label.id === labelId))
+        .filter(label => label !== undefined) as Label[];
+
+      return {
+        ...issue,        // 기존 이슈 데이터 복사
+        author,          // 찾아낸 작성자 객체
+        assignees,       // 찾아낸 담당자 '배열'
+        labels: issueLabels, // 찾아낸 라벨 객체 배열 
+      }
+    })
   })
-})
 
 // 마운트 시 초기 데이터 로드
 onMounted(() => {

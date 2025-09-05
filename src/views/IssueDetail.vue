@@ -2,13 +2,13 @@
 // IssueDetail.vue
 
 // Vue, 라우터, axios, 타입 임포트
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import api from '@/api'
 import type { Issue } from '@/types/issue'
 import type { Label, User } from '@/types/'
-import CommentSection from '@/components/CommentSection.vue' // ⭐️ 댓글 컴포넌트 임포트 확인
+import CommentSection from '@/components/CommentSection.vue' 
 import { getContrastingTextColor, generateRandomHexColor } from '@/utils/colors';
 
 // --- 기본 상태 및 라우터 ---
@@ -25,6 +25,9 @@ const error = ref<string | null>(null)
 const showAssigneeDropdown = ref(false)
 const showLabelDropdown = ref(false)
 const newLabelName = ref('') // 새 라벨 입력을 위한 상태
+
+const assigneeDropdownContainer = ref<HTMLElement | null>(null);
+const labelDropdownContainer = ref<HTMLElement | null>(null);
 
 // --- 헬퍼 함수 ---
 const getLabelById = (id: number) => labels.value.find(l => l.id === id)
@@ -59,21 +62,51 @@ const changeIssueStatus = async (newStatus: 'OPEN' | 'CLOSED') => {
 /**
  * 담당자를 업데이트하고 즉시 저장하는 함수
  */
-const updateAssignee = async (newAssigneeId: number | null) => {
-  if (!issue.value) return
-  issue.value.assigneeId = newAssigneeId
-  showAssigneeDropdown.value = false // 드롭다운 닫기
+// const updateAssignee = async (newAssigneeId: number | null) => {
+//   if (!issue.value) return
+//   issue.value.assigneeId = newAssigneeId
+//   showAssigneeDropdown.value = false // 드롭다운 닫기
+
+//   try {
+//     await api.patch(`/issues/${issueId}`, {
+//       assigneeId: newAssigneeId
+//     })
+//   } catch (err) {
+//     console.error('Failed to update assignee:', err)
+//     alert('담당자 수정에 실패했습니다. 페이지를 새로고침합니다.')
+//     fetchIssueDetail() // 실패 시 롤백
+//   }
+// }
+
+/**
+ * 다중 담당자 선택/해제 및 API 호출을 처리하는 함수
+ */
+const toggleAssigneeAndUpdate = async (userId: number) => {
+  if (!issue.value) return;
+
+  const currentAssigneeIds = issue.value.assigneeIds || [];
+  const index = currentAssigneeIds.indexOf(userId);
+
+  // 이미 포함되어 있으면 제거, 없으면 추가
+  if (index === -1) {
+    currentAssigneeIds.push(userId);
+  } else {
+    currentAssigneeIds.splice(index, 1);
+  }
+  // Vue의 반응성을 위해 새로운 배열로 교체
+  issue.value.assigneeIds = [...currentAssigneeIds];
 
   try {
+    // 백엔드에 전체 담당자 ID 목록을 담아 업데이트 요청
     await api.patch(`/issues/${issueId}`, {
-      assigneeId: newAssigneeId
-    })
+      assigneeIds: issue.value.assigneeIds
+    });
   } catch (err) {
-    console.error('Failed to update assignee:', err)
-    alert('담당자 수정에 실패했습니다. 페이지를 새로고침합니다.')
-    fetchIssueDetail() // 실패 시 롤백
+    console.error('Failed to update assignees:', err);
+    alert('담당자 수정에 실패했습니다. 페이지를 새로고침합니다.');
+    fetchIssueDetail(); // 실패 시 롤백
   }
-}
+};
 
 /**
  * 라벨을 토글하고 즉시 저장하는 함수
@@ -141,6 +174,7 @@ const createAndApplyLabel = async () => {
       });
 
       newLabelName.value = ''; // 입력창 비우기
+      showLabelDropdown.value = false;
     }
   } catch (err) {
     console.error('Failed to create and apply label:', err);
@@ -148,6 +182,20 @@ const createAndApplyLabel = async () => {
     fetchIssueDetail(); // 실패 시 롤백
   }
 }
+
+/**
+ * 외부 클릭을 감지하여 드롭다운을 닫는 핸들러
+ */
+const handleClickOutside = (event: MouseEvent) => {
+  // 담당자 드롭다운이 열려 있고, 클릭된 영역이 드롭다운 컨테이너의 바깥쪽일 때
+  if (assigneeDropdownContainer.value && !assigneeDropdownContainer.value.contains(event.target as Node)) {
+    showAssigneeDropdown.value = false;
+  }
+  // 라벨 드롭다운이 열려 있고, 클릭된 영역이 드롭다운 컨테이너의 바깥쪽일 때
+  if (labelDropdownContainer.value && !labelDropdownContainer.value.contains(event.target as Node)) {
+    showLabelDropdown.value = false;
+  }
+};
 
 /**
  * 페이지에 필요한 모든 데이터를 불러옵니다.
@@ -178,6 +226,11 @@ onMounted(() => {
   } else {
     fetchIssueDetail()
   }
+  document.addEventListener('click', handleClickOutside);
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
 })
 </script>
 
@@ -215,22 +268,35 @@ onMounted(() => {
             <p class="text-gray-800">{{ getUserById(issue.authorId)?.username || 'Unknown' }}</p>
           </div>
 
-          <div class="relative">
+          <div class="relative" ref="assigneeDropdownContainer">
             <div @click="showAssigneeDropdown = !showAssigneeDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
               <h3 class="text-sm font-semibold text-gray-500 mb-2">Assignees</h3>
-              <p>{{ getUserById(issue.assigneeId)?.username || 'No one assigned' }}</p>
+              <!-- 담당자가 여러 명일 수 있으므로 v-for로 표시 -->
+              <div v-if="issue.assigneeIds.length > 0" class="flex flex-wrap gap-2">
+                <span v-for="userId in issue.assigneeIds" :key="userId" class="px-3 py-1 text-xs font-semibold bg-gray-200 text-gray-800 rounded-full">
+                  {{ getUserById(userId)?.username || 'Unknown' }}
+                </span>
+              </div>
+              <p v-else class="text-sm text-gray-500">No one assigned</p>
             </div>
+            
+            <!-- 드롭다운 메뉴: 체크박스 -->
             <div v-if="showAssigneeDropdown" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
               <ul class="max-h-60 overflow-auto">
-                <li @click.stop="updateAssignee(null)" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Unassigned</li>
-                <li v-for="user in users" :key="user.id" @click.stop="updateAssignee(user.id)" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">
+                <!-- 각 사용자를 클릭하면 toggleAssigneeAndUpdate 함수가 호출됩니다. -->
+                <li v-for="user in users" :key="user.id" @click.stop="toggleAssigneeAndUpdate(user.id)" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center">
+                  <input 
+                    type="checkbox" 
+                    :checked="issue.assigneeIds.includes(user.id)"
+                    class="mr-3 pointer-events-none" 
+                  />
                   {{ user.username }}
                 </li>
               </ul>
             </div>
           </div>
 
-          <div class="relative">
+          <div class="relative" ref="labelDropdownContainer">
             <div @click="showLabelDropdown = !showLabelDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
               <h3 class="text-sm font-semibold text-gray-500 mb-2">Labels</h3>
               <div v-if="issue.labelIds.length > 0" class="flex flex-wrap gap-2">

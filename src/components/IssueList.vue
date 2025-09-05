@@ -8,7 +8,7 @@ import type { User, Label } from '@/types'
 defineProps<{
   issues: (Issue & {
     author: User | null
-    assignee: User | null
+    assignees: User[] 
     labels: Label[]
   })[]
 }>()

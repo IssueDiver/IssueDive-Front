@@ -13,7 +13,7 @@ const router = useRouter()
 const props = defineProps<{ 
   issue: Issue & { // Issue 타입에 author, assignee, labels 객체를 추가
     author: User | null; 
-    assignee: User | null;
+    assignees: User[];
     labels: Label[];
   }
 }>()
@@ -47,11 +47,17 @@ const gotoDetail = () => {
       </div>
     </div>
 
-    <div v-if="issue.assignee" class="flex-shrink-0 ml-4">
-      <img :src="`https://i.pravatar.cc/24?u=${issue.assignee.id}`" 
-           :alt="issue.assignee.username" 
-           class="h-6 w-6 rounded-full"
-           :title="`Assigned to ${issue.assignee.username}`">
+    <!-- 담당자가 한 명 이상일 때만 컨테이너를 보여줍니다. -->
+    <div v-if="issue.assignees.length > 0" class="flex-shrink-0 ml-4 flex items-center -space-x-2">
+      <!-- v-for를 사용해 담당자 목록을 순회하며 이미지를 렌더링합니다. -->
+      <img 
+        v-for="assignee in issue.assignees" 
+        :key="assignee.id"
+        :src="`https://i.pravatar.cc/24?u=${assignee.id}`" 
+        :alt="assignee.username" 
+        class="h-6 w-6 rounded-full border-2 border-white"
+        :title="`Assigned to ${assignee.username}`"
+      >
     </div>
   </li>
 </template>

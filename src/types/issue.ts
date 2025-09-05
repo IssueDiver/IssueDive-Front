@@ -7,7 +7,7 @@ export interface Issue {
   description: string | null;
   status: string;
   authorId: number;
-  assigneeId: number | null;
+  assigneeIds: number[];
   labelIds: number[];
   createdAt: string;
   updatedAt: string;
