@@ -10,6 +10,7 @@ import type { Issue } from '@/types/issue'
 import type { Label, User } from '@/types/'
 import CommentSection from '@/components/CommentSection.vue' 
 import { getContrastingTextColor, generateRandomHexColor } from '@/utils/colors';
+import { useAuthStore } from '@/stores/auth' 
 
 // --- 기본 상태 및 라우터 ---
 const route = useRoute()
@@ -20,11 +21,15 @@ const labels = ref<Label[]>([]) // 전체 라벨 리스트
 const users = ref<User[]>([])   // 전체 사용자 목록
 const loading = ref(true)
 const error = ref<string | null>(null)
+const authStore = useAuthStore() 
 
 // --- 수정 UI를 위한 상태 ---
 const showAssigneeDropdown = ref(false)
 const showLabelDropdown = ref(false)
 const newLabelName = ref('') // 새 라벨 입력을 위한 상태
+const isEditing = ref(false) // 수정 모드 활성화 여부
+const editedTitle = ref('')
+const editedDescription = ref('')
 
 // 드롭다운 컨테이너를 위한 템플릿 참조
 const assigneeDropdownContainer = ref<HTMLElement | null>(null);
@@ -209,7 +214,11 @@ const fetchIssueDetail = async () => {
       api.get<{ success: boolean; data: Label[] }>('/labels'),
       api.get<{ success: boolean; data: User[] }>('/auth/users')
     ])
-    if (issueRes.data.success) issue.value = issueRes.data.data
+    if (issueRes.data.success) {
+      issue.value = issueRes.data.data;
+      editedTitle.value = issue.value.title;
+      editedDescription.value = issue.value.description || '';
+    }
     if (labelRes.data.success) labels.value = labelRes.data.data
     if (userRes.data.success) users.value = userRes.data.data
   } catch (e) {
@@ -220,6 +229,50 @@ const fetchIssueDetail = async () => {
   }
 }
 
+const startEditing = () => {
+  if (!issue.value) return;
+  editedTitle.value = issue.value.title;
+  editedDescription.value = issue.value.description || '';
+  isEditing.value = true;
+}
+
+const cancelEdit = () => {
+  isEditing.value = false;
+}
+
+const saveChanges = async () => {
+  if (!issue.value) return;
+  try {
+    const response = await api.patch(`/issues/${issueId}`, {
+      title: editedTitle.value,
+      description: editedDescription.value
+    });
+    if (response.data.success) {
+      issue.value = response.data.data; // 서버로부터 받은 최신 정보로 업데이트
+      isEditing.value = false;
+      alert('이슈가 성공적으로 수정되었습니다.');
+    }
+  } catch (err) {
+    console.error('Failed to save issue changes:', err);
+    alert('이슈 수정에 실패했습니다.');
+  }
+}
+
+const deleteIssue = async () => {
+  if (!issue.value) return;
+  if (confirm(`정말로 이슈 #${issue.value.id}을(를) 삭제하시겠습니까?`)) {
+    try {
+      await api.delete(`/issues/${issueId}`);
+      alert('이슈가 삭제되었습니다.');
+      router.push({ name: 'home' }); // 삭제 후 홈으로 이동
+    } catch (err) {
+      console.error('Failed to delete issue:', err);
+      alert('이슈 삭제에 실패했습니다.');
+    }
+  }
+}
+
+// --- Lifecycle Hooks ---
 // 컴포넌트 로딩 시 실행
 onMounted(() => {
   if (!issueId || isNaN(issueId)) {
@@ -240,27 +293,46 @@ onBeforeUnmount(() => {
     <p>Loading...</p>
   </div>
   <div v-else-if="issue">
-    <div class="mb-4 pb-4 border-b border-gray-200">
-      <h1 class="text-3xl font-bold text-gray-900">{{ issue.title }} <span class="text-3xl text-gray-400 font-light">#{{ issue.id }}</span></h1>
-      <div class="flex items-center mt-2">
-        <span :class="[issue.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800']" class="px-3 py-1 text-sm font-semibold leading-none rounded-full">
-          {{ issue.status }}
-        </span>
-        <span class="ml-4 text-sm text-gray-600">
-          <strong>{{ getUserById(issue.authorId)?.username || 'unknown user' }}</strong> opened this issue on {{ new Date(issue.createdAt).toLocaleString() }}
-        </span>
+    <!-- 수정 모드일 때와 아닐 때를 구분하여 UI를 렌더링합니다. -->
+    <div v-if="isEditing" class="mb-4">
+      <input v-model="editedTitle" type="text" class="w-full text-3xl font-bold text-gray-900 border-2 border-blue-400 rounded-md p-2" />
+    </div>
+    <div v-else class="mb-4 pb-4 border-b border-gray-200 flex justify-between items-start">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">{{ issue.title }} <span class="text-3xl text-gray-400 font-light">#{{ issue.id }}</span></h1>
+        <div class="flex items-center mt-2">
+          <span :class="[issue.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800']" class="px-3 py-1 text-sm font-semibold leading-none rounded-full">
+            {{ issue.status }}
+          </span>
+          <span class="ml-4 text-sm text-gray-600">
+            <strong>{{ getUserById(issue.authorId)?.username || 'unknown user' }}</strong> opened this issue on {{ new Date(issue.createdAt).toLocaleString() }}
+          </span>
+        </div>
+      </div>
+      <!-- 현재 사용자가 작성자일 경우에만 수정/삭제 버튼을 보여줍니다. -->
+      <div v-if="authStore.user && authStore.user.id === issue.authorId" class="flex items-center space-x-2 flex-shrink-0 pt-2">
+        <button @click="startEditing" class="text-sm font-medium text-gray-600 hover:text-blue-600 border px-3 py-1 rounded-md">Edit</button>
+        <button @click="deleteIssue" class="text-sm font-medium text-gray-600 hover:text-red-600 border px-3 py-1 rounded-md">Delete</button>
       </div>
     </div>
 
     <div class="flex flex-col md:flex-row gap-8">
       <div class="flex-grow">
-        <div class="prose max-w-none p-4 border rounded-md bg-white">
+        <!-- 수정 모드일 때는 textarea를 보여줍니다. -->
+        <div v-if="isEditing" class="mb-4">
+          <textarea v-model="editedDescription" rows="10" class="w-full p-2 border-2 border-blue-400 rounded-md"></textarea>
+          <div class="mt-2 flex justify-end space-x-2">
+            <button @click="cancelEdit" class="px-4 py-2 text-sm bg-gray-200 rounded-md hover:bg-gray-300 font-semibold">Cancel</button>
+            <button @click="saveChanges" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">Save changes</button>
+          </div>
+        </div>
+        <div v-else class="prose max-w-none p-4 border rounded-md bg-white">
           <p>{{ issue.description || 'No description provided.' }}</p>
         </div>
         
         <CommentSection :issue-id="issueId" />
       </div>
-
+      
       <aside class="w-full md:w-64 flex-shrink-0">
         <div class="space-y-4">
           
