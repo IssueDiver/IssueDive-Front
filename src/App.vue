@@ -1,9 +1,15 @@
 <script setup lang="ts">
 // src/App.vue
-import { RouterLink, RouterView } from 'vue-router'
+import { RouterLink, RouterView, useRoute } from 'vue-router';
+import { computed } from 'vue';
 import { useAuthStore } from './stores/auth';
 
 const authStore = useAuthStore();
+const route = useRoute();
+
+const showAuthButtons = computed(() => {
+  return route.name !== 'login' && route.name !== 'register';
+});
 
 </script>
 
@@ -22,7 +28,7 @@ const authStore = useAuthStore();
           <RouterLink to="/labels" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Labels</RouterLink>
         </nav>
 
-        <div class="ml-auto flex items-center">
+        <div v-if="showAuthButtons" class="ml-auto flex items-center">
           <div v-if="authStore.isAuthenticated">
             <button 
               @click="authStore.logout()" 
