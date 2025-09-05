@@ -26,6 +26,7 @@ const showAssigneeDropdown = ref(false)
 const showLabelDropdown = ref(false)
 const newLabelName = ref('') // 새 라벨 입력을 위한 상태
 
+// 드롭다운 컨테이너를 위한 템플릿 참조
 const assigneeDropdownContainer = ref<HTMLElement | null>(null);
 const labelDropdownContainer = ref<HTMLElement | null>(null);
 
@@ -263,10 +264,10 @@ onBeforeUnmount(() => {
       <aside class="w-full md:w-64 flex-shrink-0">
         <div class="space-y-4">
           
-          <div class="p-4 border rounded-md bg-white">
+          <!-- <div class="p-4 border rounded-md bg-white">
             <h3 class="text-sm font-semibold text-gray-500 mb-2">Author</h3>
             <p class="text-gray-800">{{ getUserById(issue.authorId)?.username || 'Unknown' }}</p>
-          </div>
+          </div> -->
 
           <div class="relative" ref="assigneeDropdownContainer">
             <div @click="showAssigneeDropdown = !showAssigneeDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
