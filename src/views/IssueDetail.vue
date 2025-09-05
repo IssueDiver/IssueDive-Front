@@ -2,7 +2,7 @@
 // IssueDetail.vue
 
 // Vue, 라우터, axios, 타입 임포트
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import api from '@/api'
@@ -30,28 +30,46 @@ const newLabelName = ref('') // 새 라벨 입력을 위한 상태
 const isEditing = ref(false) // 수정 모드 활성화 여부
 const editedTitle = ref('')
 const editedDescription = ref('')
+const showStatusDropdown = ref(false)
 
 // 드롭다운 컨테이너를 위한 템플릿 참조
 const assigneeDropdownContainer = ref<HTMLElement | null>(null);
 const labelDropdownContainer = ref<HTMLElement | null>(null);
+const statusDropdownContainer = ref<HTMLElement | null>(null)
 
 // --- 헬퍼 함수 ---
 const getLabelById = (id: number) => labels.value.find(l => l.id === id)
-const getAssigneeById = (id: number | null) => {
-  if (!id) return null;
-  return users.value.find(u => u.id === id)
-}
+// const getAssigneeById = (id: number | null) => {
+//   if (!id) return null;
+//   return users.value.find(u => u.id === id)
+// }
 const getUserById = (id: number | null) => {
   if (!id) return null;
   return users.value.find(u => u.id === id)
 }
 
+const issueStatusInfo = computed(() => {
+  if (!issue.value) return { text: '', color: '', icon: '' };
+  switch (issue.value.status) {
+    case 'IN_PROGRESS':
+      return { text: 'In Progress', color: 'bg-blue-100 text-blue-800', icon: 'M16.023 9.348h4.992v-.001a10.5 10.5 0 0 0-9.348-9.348c-.001 0-.001.001 0 .001v4.992a5.5 5.5 0 0 1-1.42 3.879l-2.43-2.429A10.5 10.5 0 0 0 6.652 2.01v4.992a5.5 5.5 0 0 1 3.879 1.42l-2.429 2.43a10.5 10.5 0 0 0 0 9.898l2.429-2.43a5.5 5.5 0 0 1-1.42-3.879v-4.992c.001 0 .001-.001 0-.001a10.5 10.5 0 0 0 9.348 9.348v-4.992a5.5 5.5 0 0 1 1.42-3.879l2.43 2.429A10.5 10.5 0 0 0 17.348 6.652v-4.992a5.5 5.5 0 0 1-3.879-1.42l2.429-2.43z' };
+    case 'CLOSED':
+      return { text: 'Closed', color: 'bg-purple-100 text-purple-800', icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' };
+    case 'OPEN':
+    default:
+      return { text: 'Open', color: 'bg-green-100 text-green-800', icon: 'M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z' };
+  }
+});
+
 // --- API 호출 함수 ---
 /**
  * 이슈 상태 변경 (OPEN/CLOSED)
  */
-const changeIssueStatus = async (newStatus: 'OPEN' | 'CLOSED') => {
-  if (!issue.value) return
+const changeIssueStatus = async (newStatus: 'OPEN' | 'IN_PROGRESS' | 'CLOSED') => {
+  if (!issue.value || issue.value.status === newStatus) {
+    showStatusDropdown.value = false;
+    return;
+  }
   try {
     const response = await api.patch(`/issues/${issueId}/status`, { status: newStatus })
     if (response.data.success && issue.value) {
@@ -62,6 +80,8 @@ const changeIssueStatus = async (newStatus: 'OPEN' | 'CLOSED') => {
   } catch (e) {
     console.error('이슈 상태 변경 실패:', e)
     alert('서버 오류로 상태 변경이 실패했습니다.')
+  } finally {
+    showStatusDropdown.value = false; // API 호출 후 드롭다운 닫기
   }
 }
 
@@ -201,6 +221,10 @@ const handleClickOutside = (event: MouseEvent) => {
   if (labelDropdownContainer.value && !labelDropdownContainer.value.contains(event.target as Node)) {
     showLabelDropdown.value = false;
   }
+  // 상태 드롭다운이 열려 있고, 클릭된 영역이 드롭다운 컨테이너의 바깥쪽일 때
+  if (showStatusDropdown.value && statusDropdownContainer.value && !statusDropdownContainer.value.contains(event.target as Node)) {
+    showStatusDropdown.value = false;
+  }
 };
 
 /**
@@ -301,8 +325,11 @@ onBeforeUnmount(() => {
       <div>
         <h1 class="text-3xl font-bold text-gray-900">{{ issue.title }} <span class="text-3xl text-gray-400 font-light">#{{ issue.id }}</span></h1>
         <div class="flex items-center mt-2">
-          <span :class="[issue.status === 'OPEN' ? 'bg-green-100 text-green-800' : 'bg-purple-100 text-purple-800']" class="px-3 py-1 text-sm font-semibold leading-none rounded-full">
-            {{ issue.status }}
+          <span :class="issueStatusInfo.color" class="px-3 py-1 text-sm font-semibold leading-none rounded-full flex items-center">
+            <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" :d="issueStatusInfo.icon" clip-rule="evenodd" />
+            </svg>
+            {{ issueStatusInfo.text }}
           </span>
           <span class="ml-4 text-sm text-gray-600">
             <strong>{{ getUserById(issue.authorId)?.username || 'unknown user' }}</strong> opened this issue on {{ new Date(issue.createdAt).toLocaleString() }}
@@ -400,12 +427,19 @@ onBeforeUnmount(() => {
               </ul>
             </div>
           </div>
-          
-          <div class="p-4 border rounded-md bg-white">
-            <button @click="changeIssueStatus(issue.status === 'OPEN' ? 'CLOSED' : 'OPEN')"
-                    class="w-full text-center py-2 px-4 border rounded-md hover:bg-gray-100 font-semibold text-gray-700">
-                {{ issue.status === 'OPEN' ? 'Close issue' : 'Reopen issue' }}
-            </button>
+
+          <div class="relative" ref="statusDropdownContainer">
+            <div @click="showStatusDropdown = !showStatusDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
+              <h3 class="text-sm font-semibold text-gray-500 mb-2">Status</h3>
+              <p class="font-semibold">{{ issueStatusInfo.text }}</p>
+            </div>
+            <div v-if="showStatusDropdown" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+              <ul>
+                <li @click.stop="changeIssueStatus('OPEN')" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Open</li>
+                <li @click.stop="changeIssueStatus('IN_PROGRESS')" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">In Progress</li>
+                <li @click.stop="changeIssueStatus('CLOSED')" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Closed</li>
+              </ul>
+            </div>
           </div>
 
         </div>
