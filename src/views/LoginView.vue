@@ -51,17 +51,66 @@ const onLogin = async () => {
 }
 </script>
 
+
 <template>
-  <div>
-    <h1>로그인</h1>
-    <input v-model="email" placeholder="이메일" autofocus />
-    <input v-model="password" placeholder="비밀번호" type="password" @keyup.enter="onLogin" />
-    <button @click="onLogin">로그인</button>
-    <p v-if="error" style="color: red;">{{ error }}</p>
-    
-    <div style="margin-top: 20px;">
-      <span>계정이 없으신가요? </span>
-      <router-link to="/register">회원가입</router-link>
+  <div class="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="w-full max-w-md space-y-8 p-10 bg-white rounded-xl shadow-lg">
+      <div>
+        <h2 class="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+          Sign in to your account
+        </h2>
+      </div>
+      <form class="mt-8 space-y-6" @submit.prevent="onLogin">
+        <div class="rounded-md shadow-sm -space-y-px">
+          <div>
+            <label for="email-address" class="sr-only">Email address</label>
+            <input 
+              id="email-address" 
+              v-model="email" 
+              name="email" 
+              type="email" 
+              autocomplete="email" 
+              required 
+              class="relative block w-full appearance-none rounded-none rounded-t-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm" 
+              placeholder="Email address"
+              autofocus
+            />
+          </div>
+          <div>
+            <label for="password" class="sr-only">Password</label>
+            <input 
+              id="password" 
+              v-model="password" 
+              name="password" 
+              type="password" 
+              autocomplete="current-password" 
+              required 
+              class="relative block w-full appearance-none rounded-none rounded-b-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-500 focus:z-10 focus:border-green-500 focus:outline-none focus:ring-green-500 sm:text-sm" 
+              placeholder="Password"
+              @keyup.enter="onLogin"
+            />
+          </div>
+        </div>
+
+        <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <span class="block sm:inline">{{ error }}</span>
+        </div>
+
+        <div>
+          <button 
+            type="submit" 
+            class="group relative flex w-full justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Sign in
+          </button>
+        </div>
+      </form>
+      <div class="text-sm text-center">
+        <span class="text-gray-600">계정이 없으신가요? </span>
+        <router-link to="/register" class="font-medium text-green-600 hover:text-green-500">
+          회원가입
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
