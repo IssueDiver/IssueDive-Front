@@ -24,7 +24,7 @@ const emit = defineEmits<{
 const formData = reactive<IssueFormData>({
   title: '',
   description: '',
-  assigneeId: null,
+  assigneeIds: [],
   labelIds: [],
   labelIdsString: ''
 });
@@ -45,6 +45,15 @@ const onLabelIdsChange = () => {
     .filter((n) => !isNaN(n))
 }
 
+const toggleAssignee = (userId: number) => {
+  const index = formData.assigneeIds.indexOf(userId)
+  if (index === -1) {
+    formData.assigneeIds.push(userId)
+  } else {
+    formData.assigneeIds.splice(index, 1)
+  }
+}
+
 // 체크박스로 라벨 선택 변경 시 labelIds 업데이트
 const toggleLabel = (labelId: number) => {
   const index = formData.labelIds.indexOf(labelId)
@@ -56,11 +65,11 @@ const toggleLabel = (labelId: number) => {
 }
 
 // 담당자 select 변경 시 assigneeId 업데이트
-const onAssigneeChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  const val = target.value
-  formData.assigneeId = val ? parseInt(val) : null
-}
+// const onAssigneeChange = (event: Event) => {
+//   const target = event.target as HTMLSelectElement
+//   const val = target.value
+//   formData.assigneeId = val ? parseInt(val) : null
+// }
 
 /**
  * 새 라벨을 입력하고 Enter를 눌렀을 때 실행되는 함수
@@ -88,6 +97,24 @@ const addNewLabel = () => {
 
   newLabelName.value = ''; // 입력창 초기화
 }
+
+// 부모로부터 받은 labels prop이 변경될 때를 감지합니다.
+//    - 새 라벨이 생성되어 props.labels에 추가되면,
+//    - 해당 라벨을 자동으로 선택된 상태로 만듭니다.
+watch(() => props.labels, (newLabels, oldLabels) => {
+  if (newLabels.length > oldLabels.length) {
+    const newlyAddedLabel = newLabels[newLabels.length - 1]; // 가장 마지막에 추가된 라벨
+    // 이 라벨이 내가 방금 입력한 새 라벨 목록에 있는지 확인
+    const newLabelIndex = newLabelStrings.value.findIndex(
+      name => name.toLowerCase() === newlyAddedLabel.name.toLowerCase()
+    );
+    if (newLabelIndex > -1) {
+      // 있다면, 선택된 ID 목록에 추가하고, 새로 만들 목록에서는 제거
+      formData.labelIds.push(newlyAddedLabel.id);
+      newLabelStrings.value.splice(newLabelIndex, 1);
+    }
+  }
+}, { deep: true });
 
 /**
  * 폼 제출 시 새로 생성할 라벨 이름 목록도 함께 emit
@@ -135,15 +162,21 @@ const handleSubmit = () => {
       </div>
 
       <aside class="w-full md:w-64 flex-shrink-0">
-        <div class="p-4 border rounded-md bg-white">
-          <label for="assignee" class="text-sm font-semibold text-gray-600">담당자 (Assignee)</label>
-          <select id="assignee" @change="onAssigneeChange" :value="formData.assigneeId ?? ''" class="mt-2 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-            <option value="">담당자 없음</option>
-            <option v-for="user in props.users" :key="user.id" :value="user.id">
-              {{ user.username }}
-            </option>
-          </select>
+      <div class="p-4 border rounded-md bg-white">
+          <h3 class="text-sm font-semibold text-gray-600 mb-2">담당자 (Assignees)</h3>
+          <ul class="max-h-40 overflow-auto space-y-2">
+            <li v-for="user in props.users" :key="user.id" @click="toggleAssignee(user.id)" class="flex items-center cursor-pointer p-1 rounded-md hover:bg-gray-100">
+              <input 
+                type="checkbox" 
+                :checked="formData.assigneeIds.includes(user.id)"
+                class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 pointer-events-none"
+              >
+              <img :src="`https://i.pravatar.cc/24?u=${user.id}`" class="w-6 h-6 rounded-full mx-2" />
+              <span class="text-sm">{{ user.username }}</span>
+            </li>
+          </ul>
         </div>
+        
         
         <div class="mt-4 p-4 border rounded-md bg-white">
           <h3 class="text-sm font-semibold text-gray-600 mb-2">라벨 (Labels)</h3>

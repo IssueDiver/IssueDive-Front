@@ -38,7 +38,7 @@ export interface IssuesResponse {
 export interface IssueFormData {
   title: string
   description: string
-  assigneeId: number | null
+  assigneeIds: number[]
   labelIds: number[]
   labelIdsString: string  // 문자열 상태
 }
