@@ -25,7 +25,7 @@ const handleLogoutClick = () => {
     <div :class="['flex items-center h-16 flex-shrink-0 border-b border-gray-800 px-4', isOpen ? 'justify-between' : 'justify-center']">
       
       <!-- 로고는 사이드바가 열려있을 때만 보입니다. -->
-      <RouterLink v-if="isOpen" to="/" class="flex items-center text-white no-underline">
+      <RouterLink v-if="isOpen" to="/" class="flex items-center text-gray-500 no-underline">
         <svg class="h-8 w-8 text-white-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M14.25 9.75 16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" />
         </svg>
@@ -33,7 +33,7 @@ const handleLogoutClick = () => {
       </RouterLink>
       
       <!-- 토글 버튼은 항상 같은 위치에 있으며, 아이콘만 상태에 따라 변경됩니다. -->
-      <button @click="emit('toggle-sidebar')" class="p-1 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none">
+      <button @click="emit('toggle-sidebar')" class="p-1 rounded-full text-gray-500 hover:bg-gray-700 hover:text-white focus:outline-none">
         <svg v-if="isOpen" class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" /></svg>
         <svg v-else class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" /></svg>
       </button>
