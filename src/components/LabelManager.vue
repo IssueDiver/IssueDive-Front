@@ -12,6 +12,8 @@ const labels = ref<Label[]>([]);
 const newLabel = reactive({ name: '', color: '#d73a4a', description: '' });
 // 수정 중인 라벨 데이터 (수정 취소를 위해 원본과 분리)
 const editingLabel = ref<Label | null>(null);
+// 새 라벨 생성 폼의 표시 여부를 제어하는 상태 변수
+const isCreateFormVisible = ref(false);
 
 // --- API Functions ---
 const fetchLabels = async () => {
@@ -38,6 +40,7 @@ const createLabel = async () => {
       newLabel.name = '';
       newLabel.color = '#d73a4a';
       newLabel.description = '';
+      isCreateFormVisible.value = false;
     } else {
       alert('라벨 생성 실패');
     }
@@ -91,7 +94,24 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="p-4 border border-gray-300 rounded-lg">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">Labels</h1>
+      <!-- 이 버튼은 isCreateFormVisible 상태를 토글합니다. -->
+      <button
+        @click="isCreateFormVisible = !isCreateFormVisible"
+        :class="[
+          'flex-shrink-0 font-semibold px-4 py-2 rounded-md transition',
+          isCreateFormVisible 
+            ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
+            : 'bg-green-600 text-white hover:bg-green-700'
+        ]"
+      >
+        {{ isCreateFormVisible ? 'Cancel' : 'New Label' }}
+      </button>
+    </div>
+
+    <!-- v-if를 사용하여 "New Label" 버튼 클릭 시에만 폼이 보이도록 합니다. -->
+    <div v-if="isCreateFormVisible" class="mb-8 p-4 border border-gray-300 rounded-lg">
       <div class="mb-4">
         <span
           class="px-3 py-1 text-sm font-semibold rounded-full"
