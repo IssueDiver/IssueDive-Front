@@ -27,3 +27,35 @@ const mockComments: Comment[] = [
 ];
 
 </script> -->
+
+<!-- const fetchMockIssues = async () => {
+  // 실제 API 호출 대신 임시 데이터 반환
+  return [
+    {
+      id: 1,
+      title: '테스트 이슈 1',
+      description: '예제 설명',
+      status: 'OPEN',
+      authorId: 1,
+      assigneeId: 2,
+      labelIds: [1, 2],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    // 필요 시 더 추가
+  ];
+};
+
+const fetchMockUsers = async () => {
+  return [
+    { id: 1, username: 'tester1', email: 'tester1@example.com' },
+    { id: 2, username: 'tester2', email: 'tester2@example.com' },
+  ];
+};
+
+const fetchMockLabels = async () => {
+  return [
+    { id: 1, name: 'bug', color: '#ff0000', description: '' },
+    { id: 2, name: 'feature', color: '#00ff00', description: '' },
+  ];
+}; -->

@@ -1,24 +1,13 @@
 <script setup lang="ts">
 // src/views/HomeView.vue
 
-// Vue Composition API import
 import { ref, onMounted, computed, reactive } from 'vue'
-// axios import
-import axios from 'axios'
 import api from '@/api'
 import { useAuthStore } from '@/stores/auth'
-
 import { useMock } from '@/config/mockConfig'
 import { useRouter } from 'vue-router'
-
-// Import components
 import IssueList from '@/components/IssueList.vue'
 import IssueFilter from '@/components/IssueFilter.vue'
-import IssueForm from '@/components/IssueForm.vue'
-import LabelManager from '@/components/LabelManager.vue' // 라벨 관리 컴포넌트 임포트
-import { getContrastingTextColor } from '@/utils/colors'; 
-
-// 타입 import
 import type { Issue, IssueFormData, Page } from '@/types/issue'
 import type { User, Label } from '@/types/index'
 
@@ -46,38 +35,6 @@ const apiParams = reactive({
 const authStore = useAuthStore() 
 const router = useRouter()
 
-// 임시 목업 데이터 함수들
-const fetchMockIssues = async () => {
-  // 실제 API 호출 대신 임시 데이터 반환
-  return [
-    {
-      id: 1,
-      title: '테스트 이슈 1',
-      description: '예제 설명',
-      status: 'OPEN',
-      authorId: 1,
-      assigneeId: 2,
-      labelIds: [1, 2],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    // 필요 시 더 추가
-  ];
-};
-
-const fetchMockUsers = async () => {
-  return [
-    { id: 1, username: 'tester1', email: 'tester1@example.com' },
-    { id: 2, username: 'tester2', email: 'tester2@example.com' },
-  ];
-};
-
-const fetchMockLabels = async () => {
-  return [
-    { id: 1, name: 'bug', color: '#ff0000', description: '' },
-    { id: 2, name: 'feature', color: '#00ff00', description: '' },
-  ];
-};
 
 /**
  * 이슈 목록 조회 함수
@@ -123,7 +80,7 @@ const fetchIssues = async (page: number = 0) => {
 const fetchUsers = async () => {
   try {
     if (useMock){
-      users.value = await fetchMockUsers();
+      // users.value = await fetchMockUsers();
     }
     else{
         const response = await api.get<{ success: boolean; data: User[] }>(
@@ -144,7 +101,7 @@ const fetchUsers = async () => {
 const fetchLabels = async () => {
   try {
     if (useMock) {
-      labels.value = await fetchMockLabels();
+      // labels.value = await fetchMockLabels();
     } else {
       const response = await api.get<{ success: boolean; data: Label[] }>(
         '/labels'

@@ -2,11 +2,12 @@
 // src/components/IssueListItem.vue
 // 타입 임포트
 import type { Issue } from '@/types/issue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import type { Label, User } from '@/types'
 import { getContrastingTextColor } from '@/utils/colors'; 
 
 const router = useRouter()
+const route = useRoute()
 
 // 부모 컴포넌트로부터 issue 객체를 받음
 // Props 정의를 HomeView에서 보내주는 'enriched' 데이터 구조와 일치
@@ -23,7 +24,11 @@ const props = defineProps<{
 
 // 클릭 시 상세 페이지로 네비게이션 함수
 const gotoDetail = () => {
-  router.push({ name: 'issue-detail', params: { id: String(props.issue.id) } })
+  router.push({ 
+    name: 'issue-detail', 
+    params: { id: String(props.issue.id) },
+    query: route.query 
+  })
 }
 </script>
 
