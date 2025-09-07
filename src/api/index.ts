@@ -50,4 +50,32 @@ api.interceptors.request.use(
   }
 );
 
+// 응답 인터셉터 (Response Interceptor)
+// 모든 API 응답을 받은 후에 이 코드가 먼저 실행됩니다.
+api.interceptors.response.use(
+  (response) => {
+    // 1. 성공적인 응답(2xx 상태 코드)은 아무것도 하지 않고 그대로 반환합니다.
+    return response;
+  },
+  (error) => {
+    // 2. 에러가 발생한 응답을 처리합니다.
+    const authStore = useAuthStore();
+
+    // 3. 만약 에러 응답이 존재하고, 그 상태 코드가 401(Unauthorized)이라면
+    if (error.response && error.response.status === 401) {
+      // 4. authStore의 logout 액션을 호출합니다.
+      //    (이 액션은 localStorage를 비우고 로그인 페이지로 리디렉션합니다.)
+      authStore.logout();
+      
+      // 5. 사용자에게 상황을 알려줍니다.
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+    }
+
+    // 6. 처리된 에러를 반환하여, 각 API를 호출한 컴포넌트의 .catch() 블록에서도
+    //    추가적인 에러 처리를 할 수 있도록 합니다.
+    return Promise.reject(error);
+  }
+);
+
+
 export default api;
