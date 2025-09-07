@@ -16,14 +16,14 @@ const authStore = useAuthStore()
 
 const onLogin = async () => {
   if (useMock) {
-    const result = await mockLogin(email.value, password.value)
-    if (result.success) {
-      alert(`로그인 성공! 환영합니다, ${result.user.username}`)
-      // TODO: 로그인 상태 전역 저장 처리 필요
-      router.push('/')
-    } else {
-      error.value = result.message
-    }
+    // const result = await mockLogin(email.value, password.value)
+    // if (result.success) {
+    //   alert(`로그인 성공! 환영합니다, ${result.user.username}`)
+    //   // TODO: 로그인 상태 전역 저장 처리 필요
+    //   router.push('/')
+    // } else {
+    //   error.value = result.message
+    // }
   } else {
     try {
         const response = await api.post('/auth/login', {
@@ -39,7 +39,7 @@ const onLogin = async () => {
         if (user && accessToken) {
           // 스토어의 login 액션에 user와 accessToken을 모두 전달
           authStore.login(user, accessToken);
-          alert('로그인 성공!');
+          // alert('로그인 성공!'); // alert 제거
           router.push('/');
         }
       } 
