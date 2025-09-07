@@ -168,7 +168,7 @@ onUnmounted(() => {
           Filters
           <svg class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
         </button>
-          <div v-if="isFilterDropdownOpen" class="absolute z-10 mt-2 w-64 origin-top-right right-0 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div v-if="isFilterDropdownOpen" class="absolute z-10 mt-2 w-64 origin-top-right right-0 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
           <div class="py-1">
             <div class="flex justify-between items-center px-4 py-2">
                 <h3 class="text-sm font-semibold text-gray-700">Filter by</h3>
