@@ -13,7 +13,9 @@ const newLabel = reactive({ name: '', color: '#d73a4a', description: '' });
 // 수정 중인 라벨 데이터 (수정 취소를 위해 원본과 분리)
 const editingLabel = ref<Label | null>(null);
 // 새 라벨 생성 폼의 표시 여부를 제어하는 상태 변수
-const isCreateFormVisible = ref(false);
+// const isCreateFormVisible = ref(false);
+// 새 라벨 생성 모달의 표시 여부를 제어하는 상태 변수
+const isCreateModalVisible = ref(false);
 
 // --- API Functions ---
 const fetchLabels = async () => {
@@ -40,7 +42,7 @@ const createLabel = async () => {
       newLabel.name = '';
       newLabel.color = '#d73a4a';
       newLabel.description = '';
-      isCreateFormVisible.value = false;
+      isCreateModalVisible.value = false;
     } else {
       alert('라벨 생성 실패');
     }
@@ -96,55 +98,57 @@ onMounted(() => {
   <div>
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold text-gray-800">Labels</h1>
-      <!-- 이 버튼은 isCreateFormVisible 상태를 토글합니다. -->
-      <button
-        @click="isCreateFormVisible = !isCreateFormVisible"
-        :class="[
-          'flex-shrink-0 font-semibold px-4 py-2 rounded-md transition',
-          isCreateFormVisible 
-            ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' 
-            : 'bg-green-600 text-white hover:bg-green-700'
-        ]"
-      >
-        {{ isCreateFormVisible ? 'Cancel' : 'New Label' }}
+      <button @click="isCreateModalVisible = true" class="flex-shrink-0 font-semibold px-4 py-2 rounded-md transition bg-green-600 text-white hover:bg-green-700">
+        New Label
       </button>
     </div>
 
-    <!-- v-if를 사용하여 "New Label" 버튼 클릭 시에만 폼이 보이도록 합니다. -->
-    <div v-if="isCreateFormVisible" class="mb-8 p-4 border border-gray-300 rounded-lg">
-      <div class="mb-4">
-        <span
-          class="px-3 py-1 text-sm font-semibold rounded-full"
-          :style="{ 
-            backgroundColor: newLabel.color,
-            color: getContrastingTextColor(newLabel.color) 
-           }"
-        >
-          {{ newLabel.name || 'Label preview' }}
-        </span>
-      </div>
-      <form @submit.prevent="createLabel" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <div class="md:col-span-2">
-          <label for="label-name" class="block text-sm font-medium text-gray-700">Label name</label>
-          <input v-model="newLabel.name" id="label-name" placeholder="Label name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+    <!-- v-if를 사용하여 "New Label" 버튼 클릭 시에만 모달이 보이도록 합니다. -->
+    <div v-if="isCreateModalVisible" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+      <!-- 모달 콘텐츠 -->
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+        <div class="p-4 border-b">
+          <h2 class="text-lg font-semibold">Create a new label</h2>
         </div>
-        <div class="md:col-span-2">
-          <label for="label-description" class="block text-sm font-medium text-gray-700">Description</label>
-          <input v-model="newLabel.description" id="label-description" placeholder="Description (optional)" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
-        </div>
-        <div>
-          <label for="label-color" class="block text-sm font-medium text-gray-700">Color</label>
-          <div class="flex items-center mt-1">
-            <input v-model="newLabel.color" id="label-color" type="color" class="h-9 w-12 cursor-pointer" />
-            <span class="ml-2 text-gray-600">{{ newLabel.color }}</span>
+        <div class="p-4">
+          <div class="mb-4">
+            <span
+              class="px-3 py-1 text-sm font-semibold rounded-full"
+              :style="{ 
+                backgroundColor: newLabel.color,
+                color: getContrastingTextColor(newLabel.color) 
+              }"
+            >
+              {{ newLabel.name || 'Label preview' }}
+            </span>
           </div>
+          <form @submit.prevent="createLabel" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="md:col-span-2">
+              <label for="label-name" class="block text-sm font-medium text-gray-700">Label name</label>
+              <input v-model="newLabel.name" id="label-name" placeholder="Label name" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <div class="md:col-span-2">
+              <label for="label-description" class="block text-sm font-medium text-gray-700">Description</label>
+              <input v-model="newLabel.description" id="label-description" placeholder="Description (optional)" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
+            </div>
+            <div>
+              <label for="label-color" class="block text-sm font-medium text-gray-700">Color</label>
+              <div class="flex items-center mt-1">
+                <input v-model="newLabel.color" id="label-color" type="color" class="h-9 w-12 cursor-pointer" />
+                <span class="ml-2 text-gray-600">{{ newLabel.color }}</span>
+              </div>
+            </div>
+            <div class="md:col-span-5 text-right space-x-2">
+              <button @click="isCreateModalVisible = false" type="button" class="px-4 py-2 font-semibold bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">
+                Cancel
+              </button>
+              <button type="submit" class="px-4 py-2 font-semibold bg-green-600 text-white rounded-md hover:bg-green-700">
+                Create label
+              </button>
+            </div>
+          </form>
         </div>
-        <div class="md:col-span-5 text-right">
-          <button type="submit" class="px-4 py-2 font-semibold bg-green-600 text-white rounded-md hover:bg-green-700">
-            Create label
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
 
     <div class="mt-8 border border-gray-300 rounded-lg">
@@ -178,9 +182,19 @@ onMounted(() => {
               </span>
               <p class="text-sm text-gray-500 mt-2">{{ label.description }}</p>
             </div>
-            <div class="flex-shrink-0 space-x-4 text-sm">
-              <button @click="startEdit(label)" class="text-blue-600 hover:underline">Edit</button>
-              <button @click="deleteLabel(label.id)" class="text-red-600 hover:underline">Delete</button>
+
+            <div class="flex items-center space-x-4">
+              <div v-if="label.issueOpenCount > 0" class="flex items-center space-x-2 text-sm text-gray-600">
+                  <span class="hidden md:inline-flex items-center rounded-md bg-gray-700 px-2 py-1 text-xs font-medium text-white ring-1 ring-inset ring-gray-500/10">{{ label.issueOpenCount }} open issues</span>
+                  <a href="#" class="hover:text-blue-600 flex items-center">
+                    <svg class="w-4 h-4 text-blue-500 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                    <span>{{ label.issueOpenCount }}</span>
+                  </a>
+              </div>
+              <div class="flex-shrink-0 space-x-4 text-sm">
+                <button @click="startEdit(label)" class="text-blue-600 hover:underline">Edit</button>
+                <button @click="deleteLabel(label.id)" class="text-red-600 hover:underline">Delete</button>
+              </div>
             </div>
           </template>
         </li>
