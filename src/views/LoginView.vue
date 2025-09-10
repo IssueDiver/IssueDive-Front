@@ -56,7 +56,7 @@ const onLogin = async () => {
           Sign in to your account
         </h2>
       </div>
-      <form class="mt-8 space-y-6" @submit.prevent="onLogin">
+      <form class="mt-8 space-y-6" @submit.prevent="onLogin" novalidate>
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
             <label for="email-address" class="sr-only">Email address</label>

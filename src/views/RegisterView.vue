@@ -57,7 +57,7 @@ const onRegister = async () => {
           Create a new account
         </h2>
       </div>
-      <form class="mt-8 space-y-6" @submit.prevent="onRegister">
+      <form class="mt-8 space-y-6" @submit.prevent="onRegister" novalidate>
         <div class="rounded-md shadow-sm -space-y-px">
           <div>
             <label for="username" class="sr-only">Username</label>
