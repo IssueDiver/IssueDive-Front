@@ -31,7 +31,6 @@ const onLogin = async () => {
         if (user && accessToken) {
           // 스토어의 login 액션에 user와 accessToken을 모두 전달
           authStore.login(user, accessToken);
-          // alert('로그인 성공!'); // alert 제거
           router.push('/');
         }
       } 

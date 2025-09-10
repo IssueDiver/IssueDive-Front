@@ -6,13 +6,15 @@ import { useRouter } from 'vue-router'
 import { mockRegister, useMock } from '@/config/mockConfig'
 import api from '@/api'
 import axios from 'axios'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const username = ref('')
 const email = ref('')
 const password = ref('')
 const error = ref('')
-const success = ref('')
+// const success = ref('')
+const authStore = useAuthStore()
 
 const onRegister = async () => {
   if (!username.value.trim() || !email.value.trim() || !password.value.trim()) {
@@ -28,12 +30,15 @@ const onRegister = async () => {
         password: password.value,
       })
 
-      if (response.data.success) {
-        success.value = '회원가입 성공! 로그인 페이지로 이동합니다.'
-        error.value = ''
-        setTimeout(() => {
-          router.push({ name: 'login' })
-        }, 2000) // 2초 후 로그인 페이지로 이동
+      const responseData = response.data.data;
+      const user = responseData.user;
+      const accessToken = responseData.accessToken;
+    
+      if (user && accessToken) {
+        // 성공 메시지 대신, auth 스토어의 login 액션을 호출하여 로그인 상태로 만듭니다.
+        // 로그인 페이지가 아닌 메인 페이지('/')로 즉시 이동합니다.
+        authStore.login(user, accessToken);
+        router.push('/');
       }
     } catch (err: any) {
       // Axios 에러인지 확인하고, 백엔드에서 온 에러 메시지를 사용
@@ -43,7 +48,6 @@ const onRegister = async () => {
       } else {
         error.value = '알 수 없는 오류가 발생했습니다.';
       }
-      success.value = ''
     }
   }
 }
@@ -102,9 +106,9 @@ const onRegister = async () => {
         <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <span class="block sm:inline">{{ error }}</span>
         </div>
-        <div v-if="success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+        <!-- <div v-if="success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
           <span class="block sm:inline">{{ success }}</span>
-        </div>
+        </div> -->
 
         <div>
           <button 
