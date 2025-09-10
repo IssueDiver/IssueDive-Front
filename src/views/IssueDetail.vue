@@ -32,9 +32,18 @@ const showStatusDropdown = ref(false)
 const assigneeDropdownContainer = ref<HTMLElement | null>(null);
 const labelDropdownContainer = ref<HTMLElement | null>(null);
 const statusDropdownContainer = ref<HTMLElement | null>(null)
+const newLabelSearchText = ref(''); // 라벨 검색/입력 텍스트
+const showNewLabelForm = ref(false); // 새 라벨 생성 폼 표시 여부
+const newLabelData = ref({ name: '', description: '' }); // 새 라벨 데이터 (이름+설명)
 
 const getUserById = (id: number | null) => users.value.find(u => u.id === id) || null
 const getLabelById = (id: number) => labels.value.find(l => l.id === id) || null
+
+const issueLabels = computed(() => {
+  if (!issue.value || !labels.value.length) return [];
+  // 현재 이슈의 labelIds 배열을 기반으로, 전체 라벨 목록에서 일치하는 라벨 객체를 찾아 반환
+  return issue.value.labelIds.map(id => labels.value.find(l => l.id === id)).filter(Boolean) as Label[];
+});
 
 const issueStatusInfo = computed(() => {
   if (!issue.value) return { text: '', color: '', icon: '' };
@@ -99,7 +108,6 @@ const createAndApplyLabel = async () => {
 const fetchIssueDetail = async () => {
   try {
     loading.value = true;
-    // ⭐️ 4. Promise.all 배열 안에서 누락되었던 쉼표(,)를 추가합니다.
     const [issueRes, labelRes, userRes, navRes] = await Promise.all([
       api.get(`/issues/${issueId.value}`),
       api.get('/labels'),
@@ -175,6 +183,86 @@ const deleteIssue = async () => {
   }
 }
 
+// --- 
+
+// [수정] 라벨 추가/제거 로직
+const toggleLabel = async (labelId: number) => {
+  if (!issue.value) return;
+  const issueLabelIds = issue.value.labelIds || [];
+  let updatedLabelIds: number[] = [];
+
+  if (issueLabelIds.includes(labelId)) {
+    // 이미 있으면 제거
+    updatedLabelIds = issueLabelIds.filter(id => id !== labelId);
+  } else {
+    // 없으면 추가
+    updatedLabelIds = [...issueLabelIds, labelId];
+  }
+
+  try {
+    const response = await api.patch(`/issues/${issueId.value}`, { labelIds: updatedLabelIds });
+    if (response.data.success) {
+      issue.value.labelIds = response.data.data.labelIds;
+    }
+  } catch (error) {
+    console.error("라벨 업데이트 실패:", error);
+  }
+};
+
+// [수정] 즉시 라벨 생성 및 추가 로직
+const createAndAddLabel = async () => {
+  if (!newLabelData.value.name.trim()) {
+    alert('라벨 이름을 입력해주세요.');
+    return;
+  }
+
+  try {
+    // 1. 새 라벨 생성 API 호출
+    const createResponse = await api.post<{ success: boolean; data: Label }>('/labels', {
+      name: newLabelData.value.name,
+      description: newLabelData.value.description,
+      color: generateRandomHexColor(),
+    });
+
+    if (createResponse.data.success) {
+      const newLabel = createResponse.data.data;
+      labels.value.push(newLabel); // 전체 라벨 목록에 추가
+
+      // 2. 생성된 라벨을 현재 이슈에 추가
+      await toggleLabel(newLabel.id);
+      
+      // 3. 상태 초기화
+      newLabelSearchText.value = '';
+      newLabelData.value = { name: '', description: '' };
+      showNewLabelForm.value = false;
+    }
+  } catch (error) {
+    console.error("라벨 생성 실패:", error);
+    alert("라벨 생성에 실패했습니다.");
+  }
+};
+
+
+// [추가] 라벨 검색 텍스트가 변경될 때 호출되는 함수
+const onLabelSearchChange = () => {
+  // 사용자가 입력한 텍스트와 일치하는 라벨이 없고, 입력값이 있다면
+  if (newLabelSearchText.value && !filteredLabels.value.some(l => l.name.toLowerCase() === newLabelSearchText.value.toLowerCase())) {
+    newLabelData.value.name = newLabelSearchText.value;
+    showNewLabelForm.value = true; // 새 라벨 생성 폼을 보여줌
+  } else {
+    showNewLabelForm.value = false; // 그렇지 않으면 숨김
+  }
+}
+
+const filteredLabels = computed(() => {
+  if (!newLabelSearchText.value) return labels.value;
+  return labels.value.filter(label => 
+    label.name.toLowerCase().includes(newLabelSearchText.value.toLowerCase())
+  );
+});
+
+
+// -- handler
 const handleClickOutside = (event: MouseEvent) => {
   if (assigneeDropdownContainer.value && !assigneeDropdownContainer.value.contains(event.target as Node)) { showAssigneeDropdown.value = false; }
   if (labelDropdownContainer.value && !labelDropdownContainer.value.contains(event.target as Node)) { showLabelDropdown.value = false; }
@@ -207,7 +295,7 @@ watch(() => route.params.id, (newId) => {
   </div>
   <div v-else-if="issue">
     <div class="mb-4 pb-4 border-b border-gray-200 flex justify-between items-start">
-      <!-- 제목, 상태, 작성자 정보 (기존 구조 유지) -->
+      <!-- 제목, 상태, 작성자 정보 -->
       <div v-if="!isEditing" class="flex-grow">
         <h1 class="text-3xl font-bold text-gray-900">{{ issue.title }} <span class="text-3xl text-gray-400 font-light">#{{ issue.id }}</span></h1>
         <div class="flex items-center mt-2">
@@ -262,6 +350,7 @@ watch(() => route.params.id, (newId) => {
       <aside class="w-full md:w-64 flex-shrink-0">
         <div class="space-y-4">
           
+          <!-- Assignees Dropdown -->
           <div class="relative" ref="assigneeDropdownContainer">
             <div @click="showAssigneeDropdown = !showAssigneeDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
               <h3 class="text-sm font-semibold text-gray-500 mb-2">Assignees</h3>
@@ -284,27 +373,58 @@ watch(() => route.params.id, (newId) => {
             </div>
           </div>
 
+          <!-- Labels Dropdown -->
           <div class="relative" ref="labelDropdownContainer">
-            <div @click="showLabelDropdown = !showLabelDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
-              <h3 class="text-sm font-semibold text-gray-500 mb-2">Labels</h3>
-              <div v-if="issue.labelIds.length > 0" class="flex flex-wrap gap-2">
-                <span v-for="labelId in issue.labelIds" :key="labelId" :style="{ backgroundColor: getLabelById(labelId)?.color, color: getContrastingTextColor(getLabelById(labelId)?.color || '#000000') }" class="px-3 py-1 text-xs font-semibold rounded-full shadow-sm">{{ getLabelById(labelId)?.name }}</span>
-              </div>
-              <p v-else class="text-sm text-gray-500">None yet</p>
+          <div @click="showLabelDropdown = !showLabelDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50 flex justify-between items-center">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-500">Labels</h3>
+              <p v-if="issueLabels.length === 0" class="text-gray-400 text-sm mt-1">None yet</p>
             </div>
-             <div v-if="showLabelDropdown" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-              <ul class="max-h-60 overflow-auto">
-                <li class="p-2">
-                  <input v-model="newLabelName" @keydown.enter.prevent="createAndApplyLabel" @click.stop type="text" placeholder="새 라벨 입력 후 Enter" class="block w-full text-xs px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" />
-                </li>
-                <li v-for="label in labels" :key="label.id" @click.stop="toggleLabelAndUpdate(label.id)" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center">
-                  <input type="checkbox" :checked="issue.labelIds.includes(label.id)" class="mr-3 pointer-events-none" />
-                  <span :style="{ backgroundColor: label.color, color: getContrastingTextColor(label.color) }" class="px-2 py-0.5 text-xs font-semibold rounded-full">{{ label.name }}</span>
-                </li>
-              </ul>
-            </div>
+            <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-1.025 1.11-1.115l.61-.162a2.25 2.25 0 0 1 2.15 0l.61.162c.55.09 1.02.573 1.11 1.115l.078.462a2.25 2.25 0 0 0 3.72 1.482l.36-.36a2.25 2.25 0 0 1 3.182 3.182l-.36.36a2.25 2.25 0 0 0-1.482 3.72l-.462.078c-.542.09-1.025.56-1.115 1.11l-.162.61a2.25 2.25 0 0 1-2.15 1.588l-.61-.162a2.25 2.25 0 0 0-3.72-1.482l-.36.36a2.25 2.25 0 0 1-3.182-3.182l.36-.36a2.25 2.25 0 0 0 1.482-3.72l.462-.078a2.25 2.25 0 0 1 1.588-2.15l.162-.61Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
           </div>
+          <!-- 라벨 목록 -->
+          <ul class="mt-2 space-y-1" v-if="issueLabels.length > 0">
+            <li v-for="label in issueLabels" :key="label.id">
+              <span :style="{ backgroundColor: label.color, color: getContrastingTextColor(label.color) }" class="px-2 py-0.5 text-xs font-semibold rounded-full">{{ label.name }}</span>
+            </li>
+          </ul>
 
+          <!-- 드롭다운 메뉴 -->
+          <div v-if="showLabelDropdown" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+            <div class="p-2 border-b">
+              <input 
+                type="text" 
+                v-model="newLabelSearchText"
+                @input="onLabelSearchChange"
+                placeholder="Filter labels" 
+                class="w-full px-2 py-1 text-sm border-gray-300 rounded-md"
+              >
+            </div>
+            
+            <div v-if="showNewLabelForm" class="p-2 border-b bg-gray-50">
+                <p class="text-xs text-gray-600 mb-2">Create new label "{{ newLabelData.name }}"</p>
+                <input 
+                  type="text"
+                  v-model="newLabelData.description"
+                  placeholder="Description (optional)"
+                  class="w-full px-2 py-1 mb-2 text-sm border-gray-300 rounded-md"
+                >
+                <button @click="createAndAddLabel" class="w-full text-sm bg-green-600 text-white py-1 rounded-md hover:bg-green-700">Create</button>
+            </div>
+
+            <ul>
+              <li v-for="label in filteredLabels" :key="label.id" @click="toggleLabel(label.id)" class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="w-4 h-4 rounded-full mr-2" :style="{ backgroundColor: label.color }"></span>
+                  {{ label.name }}
+                </div>
+                <svg v-if="issue?.labelIds.includes(label.id)" class="w-4 h-4 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+          <!-- Status Dropdown -->
           <div class="relative" ref="statusDropdownContainer">
             <div @click="showStatusDropdown = !showStatusDropdown" class="p-4 border rounded-md bg-white cursor-pointer hover:bg-gray-50">
               <h3 class="text-sm font-semibold text-gray-500 mb-2">Status</h3>
