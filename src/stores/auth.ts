@@ -11,6 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   // localStorage에서 초기 값을 가져와서 새로고침해도 유지되도록 함
   const user = ref<User | null>(JSON.parse(localStorage.getItem('user') || 'null'));
   const accessToken = ref<string | null>(localStorage.getItem('accessToken'));
+  const sessionExpiredAlertShown = ref(false); // 세션 만료 알림이 이미 표시되었는지 추적하는 플래그
 
   // --- Getters ---
   const isAuthenticated = computed(() => !!accessToken.value);
@@ -24,6 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
   function login(userData: User, token: string) {
     user.value = userData;
     accessToken.value = token;
+    sessionExpiredAlertShown.value = false; // 로그인 성공 시 플래그 초기화
     // localStorage에 저장하여 영속성 유지
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('accessToken', token);
@@ -56,5 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
   //   }
   // }
 
-  return { user, accessToken, isAuthenticated, login, logout };
+  return { user, accessToken, isAuthenticated, 
+    sessionExpiredAlertShown, // 외부에서 사용할 수 있도록 반환
+    login, logout };
 });

@@ -62,13 +62,17 @@ api.interceptors.response.use(
     const authStore = useAuthStore();
 
     // 3. 만약 에러 응답이 존재하고, 그 상태 코드가 401(Unauthorized)이라면
-    if (error.response && error.response.status === 401) {
-      // 4. authStore의 logout 액션을 호출합니다.
+    // 그리고 아직 세션 만료 알림이 표시되지 않았다면
+    if (error.response && error.response.status === 401
+      && !authStore.sessionExpiredAlertShown) {
+      // 4. 플래그를 true로 설정하여 중복 알림 방지
+      // 사용자에게 상황 알림
+      authStore.sessionExpiredAlertShown = true;
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+
+      // 5. authStore의 logout 액션을 호출합니다.
       //    (이 액션은 localStorage를 비우고 로그인 페이지로 리디렉션합니다.)
       authStore.logout();
-      
-      // 5. 사용자에게 상황을 알려줍니다.
-      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
     }
 
     // 6. 처리된 에러를 반환하여, 각 API를 호출한 컴포넌트의 .catch() 블록에서도

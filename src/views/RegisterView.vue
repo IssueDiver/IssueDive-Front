@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { mockRegister, useMock } from '@/config/mockConfig'
 import api from '@/api'
+import axios from 'axios'
 
 const router = useRouter()
 const username = ref('')
@@ -19,15 +20,6 @@ const onRegister = async () => {
     return
   }
   if (useMock) {
-    const result = await mockRegister(username.value, email.value, password.value)
-    if (result.success) {
-      success.value = '회원가입 성공! 로그인하세요.'
-      error.value = ''
-      // 리디렉션은 임의로 처리하거나 버튼 클릭으로 유도 가능
-    } else {
-      error.value = result.message ?? '회원가입에 실패했습니다.'
-      success.value = ''
-    }
   } else {
     try {
       const response = await api.post('/auth/signup', {
@@ -44,11 +36,12 @@ const onRegister = async () => {
         }, 2000) // 2초 후 로그인 페이지로 이동
       }
     } catch (err: any) {
-      // 400 Bad Request와 같은 에러 처리
-      if (err.response && err.response.data && err.response.data.message) {
-        error.value = err.response.data.message
+      // Axios 에러인지 확인하고, 백엔드에서 온 에러 메시지를 사용
+      if (axios.isAxiosError(err) && err.response) {
+        // 백엔드의 에러 메시지가 복잡한 문자열일 수 있으므로, message만 추출하거나 그대로 사용
+        error.value = err.response.data.error?.message || '회원가입에 실패했습니다. 입력 정보를 확인해주세요.';
       } else {
-        error.value = '회원가입에 실패했습니다.'
+        error.value = '알 수 없는 오류가 발생했습니다.';
       }
       success.value = ''
     }

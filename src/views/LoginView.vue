@@ -16,14 +16,6 @@ const authStore = useAuthStore()
 
 const onLogin = async () => {
   if (useMock) {
-    // const result = await mockLogin(email.value, password.value)
-    // if (result.success) {
-    //   alert(`로그인 성공! 환영합니다, ${result.user.username}`)
-    //   // TODO: 로그인 상태 전역 저장 처리 필요
-    //   router.push('/')
-    // } else {
-    //   error.value = result.message
-    // }
   } else {
     try {
         const response = await api.post('/auth/login', {
@@ -44,8 +36,12 @@ const onLogin = async () => {
         }
       } 
     catch (err) {
-      error.value = '로그인에 실패했습니다. 이메일과 비밀번호를 확인하세요.';
-      console.error(err);
+      // Axios 에러인지 확인하고, 백엔드에서 온 에러 메시지를 사용
+      if (axios.isAxiosError(err) && err.response) {
+        error.value = err.response.data.error?.message || '로그인에 실패했습니다. 입력 정보를 확인해주세요.';
+      } else {
+        error.value = '알 수 없는 오류가 발생했습니다.';
+      }
     }
   }
 }
