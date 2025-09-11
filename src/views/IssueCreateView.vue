@@ -17,8 +17,8 @@ const fetchInitialData = async () => {
   try {
     isLoading.value = true
     const [userRes, labelRes] = await Promise.all([
-      api.get<{ success: boolean; data: User[] }>('/auth/users'),
-      api.get<{ success: boolean; data: Label[] }>('/labels')
+      api.get<{ success: boolean; data: User[] }>('/api/auth/users'),
+      api.get<{ success: boolean; data: Label[] }>('/api/labels')
     ])
     if (userRes.data.success) users.value = userRes.data.data
     if (labelRes.data.success) labels.value = labelRes.data.data
@@ -41,7 +41,7 @@ const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[]
     if (formData.newLabels && formData.newLabels.length > 0) {
       for (const labelName of formData.newLabels) {
         try {
-          const res = await api.post<{ success: boolean, data: Label }>('/labels', {
+          const res = await api.post<{ success: boolean, data: Label }>('/api/labels', {
             name: labelName,
             color: generateRandomHexColor(),
             description: ''
@@ -50,7 +50,7 @@ const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[]
             const newLabel = res.data.data;
             newLabelIds.push(newLabel.id);
             
-            // ⭐️ 핵심 수정 1: 새로 생성된 라벨을 labels ref에 즉시 추가합니다.
+            // 새로 생성된 라벨을 labels ref에 즉시 추가합니다.
             //    - 이렇게 하면 자식(IssueForm)에게 prop이 업데이트되어 UI가 즉시 갱신됩니다.
             labels.value.push(newLabel);
           }
@@ -64,11 +64,11 @@ const handleIssueSubmit = async (formData: IssueFormData & { newLabels: string[]
     
     const allLabelIds = [...formData.labelIds, ...newLabelIds];
 
-    // ⭐️ 핵심 수정 2: API 요청 시 assigneeId 대신 assigneeIds를 사용합니다.
-    const response = await api.post('/issues', {
+    // API 요청 시 assigneeId 대신 assigneeIds를 사용합니다.
+    const response = await api.post('/api/issues', {
       title: formData.title,
       description: formData.description,
-      assigneeIds: formData.assigneeIds, // assigneeId -> assigneeIds로 변경
+      assigneeIds: formData.assigneeIds, 
       labels: allLabelIds,
     });
 

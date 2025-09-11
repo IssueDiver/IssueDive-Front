@@ -37,14 +37,6 @@ const newLabelName = ref('')
 const newLabelStrings = ref<string[]>([])
 
 // --- Handlers ---
-// 라벨 입력 문자열 변경 시 labelIds 배열 업데이트 함수
-const onLabelIdsChange = () => {
-  formData.labelIds = formData.labelIdsString
-    .split(',')
-    .map((s) => parseInt(s.trim()))
-    .filter((n) => !isNaN(n))
-}
-
 const toggleAssignee = (userId: number) => {
   const index = formData.assigneeIds.indexOf(userId)
   if (index === -1) {
@@ -63,13 +55,6 @@ const toggleLabel = (labelId: number) => {
     formData.labelIds.splice(index, 1)
   }
 }
-
-// 담당자 select 변경 시 assigneeId 업데이트
-// const onAssigneeChange = (event: Event) => {
-//   const target = event.target as HTMLSelectElement
-//   const val = target.value
-//   formData.assigneeId = val ? parseInt(val) : null
-// }
 
 /**
  * 새 라벨을 입력하고 Enter를 눌렀을 때 실행되는 함수

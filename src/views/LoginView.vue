@@ -18,7 +18,7 @@ const onLogin = async () => {
   if (useMock) {
   } else {
     try {
-        const response = await api.post('/auth/login', {
+        const response = await api.post('/api/auth/login', {
           email: email.value, // username 대신 email 전송
           password: password.value,
         });

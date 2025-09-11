@@ -13,7 +13,7 @@ const isCreateModalVisible = ref(false);
 // --- API Functions ---
 const fetchLabels = async () => {
   try {
-    const res = await api.get<{ success: boolean; data: Label[] }>('/labels');
+    const res = await api.get<{ success: boolean; data: Label[] }>('/api/labels');
     if (res.data.success) {
       labels.value = res.data.data;
     }
@@ -28,7 +28,7 @@ const createLabel = async () => {
     return;
   }
   try {
-    const res = await api.post('/labels', newLabel);
+    const res = await api.post('/api/labels', newLabel);
     if (res.data.success) {
       await fetchLabels();
       newLabel.name = '';
@@ -59,7 +59,7 @@ const cancelEdit = () => {
 const saveEdit = async () => {
   if (!editingLabel.value) return;
   try {
-    const res = await api.patch(`/labels/${editingLabel.value.id}`, editingLabel.value);
+    const res = await api.patch(`/api/labels/${editingLabel.value.id}`, editingLabel.value);
     if (res.data.success) {
       await fetchLabels();
       editingLabel.value = null; // 성공 시 모달 닫기
@@ -75,7 +75,7 @@ const saveEdit = async () => {
 const deleteLabel = async (id: number) => {
   if (!confirm('이 라벨을 삭제하시겠습니까? 이 라벨을 사용하는 모든 이슈에서 제거됩니다.')) return;
   try {
-    await api.delete(`/labels/${id}`);
+    await api.delete(`/api/labels/${id}`);
     await fetchLabels();
   } catch (e) {
     alert('서버 오류 발생');

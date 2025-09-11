@@ -13,7 +13,6 @@ const username = ref('')
 const email = ref('')
 const password = ref('')
 const error = ref('')
-// const success = ref('')
 const authStore = useAuthStore()
 
 const onRegister = async () => {
@@ -24,7 +23,7 @@ const onRegister = async () => {
   if (useMock) {
   } else {
     try {
-      const response = await api.post('/auth/signup', {
+      const response = await api.post('/api/auth/signup', {
         username: username.value,
         email: email.value,
         password: password.value,
@@ -106,9 +105,6 @@ const onRegister = async () => {
         <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
           <span class="block sm:inline">{{ error }}</span>
         </div>
-        <!-- <div v-if="success" class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-          <span class="block sm:inline">{{ success }}</span>
-        </div> -->
 
         <div>
           <button 

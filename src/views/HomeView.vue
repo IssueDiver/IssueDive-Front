@@ -45,7 +45,7 @@ const fetchIssues = async (page: number = 0) => {
     if (apiParams.assigneeIds.length > 0) params.assigneeIds = apiParams.assigneeIds
     if (apiParams.labelIds.length > 0) params.labelIds = apiParams.labelIds
 
-    const response = await api.get<{ success: boolean; data: Page<Issue> }>('/issues', { params })
+    const response = await api.get<{ success: boolean; data: Page<Issue> }>('/api/issues', { params })
 
     if (response.data.success) {
       const pageData = response.data.data
@@ -60,14 +60,14 @@ const fetchIssues = async (page: number = 0) => {
 
 const fetchUsers = async () => {
   try {
-    const response = await api.get<{ success: boolean; data: User[] }>('/auth/users')
+    const response = await api.get<{ success: boolean; data: User[] }>('/api/auth/users')
     if (response.data.success) users.value = response.data.data
   } catch (error) { console.error('사용자 목록 불러오기 실패:', error) }
 };
 
 const fetchLabels = async () => {
   try {
-    const response = await api.get<{ success: boolean; data: Label[] }>('/labels');
+    const response = await api.get<{ success: boolean; data: Label[] }>('/api/labels');
     if (response.data.success) labels.value = response.data.data;
   } catch (error) { console.error('라벨 목록 불러오기 실패:', error); }
 };

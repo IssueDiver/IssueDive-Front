@@ -40,12 +40,6 @@ const emit = defineEmits<{
 const editText = ref(props.comment.description);
 const replyText = ref('');
 
-// --- Event Forwarding Handlers for Nested Comments ---
-// 자식(대댓글)의 이벤트를 그대로 부모(CommentSection)에게 전달하는 역할
-// const forwardEvent = (eventName: any, ...args: any[]) => {
-//   emit(eventName, ...args);
-// };
-
 const forwardStartEdit = (comment: Comment) => {
   emit('startEdit', comment);
 };
@@ -73,7 +67,6 @@ const forwardSubmitReply = (parentId: number, newText: string) => {
     </div>
 
     <div class="flex-grow">
-      <!-- ⭐️ 3. 수정 모드 UI를 CommentItem 내부로 이동 -->
       <div v-if="editingCommentId === comment.id" class="w-full">
         <textarea v-model="editText" rows="4" class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
         <div class="mt-2 text-right space-x-2">

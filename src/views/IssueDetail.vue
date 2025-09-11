@@ -62,7 +62,7 @@ const issueStatusInfo = computed(() => {
 const changeIssueStatus = async (newStatus: 'OPEN' | 'IN_PROGRESS' | 'CLOSED') => {
   if (!issue.value) return;
   try {
-    const response = await api.patch(`/issues/${issueId.value}/status`, { status: newStatus });
+    const response = await api.patch(`/api/issues/${issueId.value}/status`, { status: newStatus });
     if (response.data.success) { issue.value.status = response.data.data.status; issue.value.updatedAt = response.data.data.updatedAt; }
   } catch (e) { console.error('이슈 상태 변경 실패:', e); alert('서버 오류로 상태 변경이 실패했습니다.'); } 
   finally { showStatusDropdown.value = false; }
@@ -74,7 +74,7 @@ const toggleAssigneeAndUpdate = async (userId: number) => {
   const index = ids.indexOf(userId);
   if (index === -1) { ids.push(userId); } else { ids.splice(index, 1); }
   issue.value.assigneeIds = [...ids];
-  try { await api.patch(`/issues/${issueId.value}`, { assigneeIds: issue.value.assigneeIds }); } 
+  try { await api.patch(`/api/issues/${issueId.value}`, { assigneeIds: issue.value.assigneeIds }); } 
   catch (err) { alert('담당자 수정에 실패했습니다.'); fetchIssueDetail(); }
 };
 
@@ -84,7 +84,7 @@ const toggleLabelAndUpdate = async (labelId: number) => {
   const index = ids.indexOf(labelId);
   if (index === -1) { ids.push(labelId); } else { ids.splice(index, 1); }
   issue.value.labelIds = [...ids];
-  try { await api.patch(`/issues/${issueId.value}`, { labelIds: issue.value.labelIds }); } 
+  try { await api.patch(`/api/issues/${issueId.value}`, { labelIds: issue.value.labelIds }); } 
   catch (err) { alert('라벨 수정에 실패했습니다.'); fetchIssueDetail(); }
 }
 
@@ -93,12 +93,12 @@ const createAndApplyLabel = async () => {
   if (!name || !issue.value) return;
   if (labels.value.some(l => l.name.toLowerCase() === name.toLowerCase())) { alert('이미 존재하는 라벨입니다.'); newLabelName.value = ''; return; }
   try {
-    const res = await api.post('/labels', { name, color: generateRandomHexColor(), description: '' });
+    const res = await api.post('/api/labels', { name, color: generateRandomHexColor(), description: '' });
     if (res.data.success) {
       const newLabel = res.data.data;
       labels.value.push(newLabel);
       issue.value.labelIds = [...issue.value.labelIds, newLabel.id];
-      await api.patch(`/issues/${issueId.value}`, { labelIds: issue.value.labelIds });
+      await api.patch(`/api/issues/${issueId.value}`, { labelIds: issue.value.labelIds });
       newLabelName.value = '';
       showLabelDropdown.value = false;
     }
@@ -109,10 +109,10 @@ const fetchIssueDetail = async () => {
   try {
     loading.value = true;
     const [issueRes, labelRes, userRes, navRes] = await Promise.all([
-      api.get(`/issues/${issueId.value}`),
-      api.get('/labels'),
-      api.get('/auth/users'),
-      api.get(`/issues/${issueId.value}/navigation`, { params: route.query })
+      api.get(`/api/issues/${issueId.value}`),
+      api.get('/api/labels'),
+      api.get('/api/auth/users'),
+      api.get(`/api/issues/${issueId.value}/navigation`, { params: route.query })
     ]);
     
      if (issueRes.data.success) {
@@ -154,7 +154,7 @@ const cancelEdit = () => {
 const saveChanges = async () => {
   if (!issue.value) return;
   try {
-    const response = await api.patch(`/issues/${issueId.value}`, {
+    const response = await api.patch(`/api/issues/${issueId.value}`, {
       title: editedTitle.value,
       description: editedDescription.value
     });
@@ -173,7 +173,7 @@ const deleteIssue = async () => {
   if (!issue.value) return;
   if (confirm(`정말로 이슈 #${issue.value.id}을(를) 삭제하시겠습니까?`)) {
     try {
-      await api.delete(`/issues/${issueId.value}`);
+      await api.delete(`/api/issues/${issueId.value}`);
       alert('이슈가 삭제되었습니다.');
       router.push({ name: 'home' });
     } catch (err) {
@@ -200,7 +200,7 @@ const toggleLabel = async (labelId: number) => {
   }
 
   try {
-    const response = await api.patch(`/issues/${issueId.value}`, { labelIds: updatedLabelIds });
+    const response = await api.patch(`/api/issues/${issueId.value}`, { labelIds: updatedLabelIds });
     if (response.data.success) {
       issue.value.labelIds = response.data.data.labelIds;
     }
@@ -218,7 +218,7 @@ const createAndAddLabel = async () => {
 
   try {
     // 1. 새 라벨 생성 API 호출
-    const createResponse = await api.post<{ success: boolean; data: Label }>('/labels', {
+    const createResponse = await api.post<{ success: boolean; data: Label }>('/api/labels', {
       name: newLabelData.value.name,
       description: newLabelData.value.description,
       color: generateRandomHexColor(),

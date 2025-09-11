@@ -2,8 +2,7 @@
 // src/components/CommentSection.vue
 
 // --- Imports ---
-import { ref, reactive, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, onMounted } from 'vue'
 import api from '@/api'
 import CommentItem from './CommentItem.vue' // 새로 만든 CommentItem 컴포넌트를 임포트합니다.
 import { useMock } from '@/config/mockConfig'
@@ -32,7 +31,7 @@ const fetchComments = async () => {
     } else {
       // 백엔드 API 응답 구조에 맞게 수정
       const response = await api.get<{ success: boolean; data: Comment[] }>(
-        `/issues/${props.issueId}/comments`
+        `/api/issues/${props.issueId}/comments`
       )
       if (response.data.success) {
         comments.value = response.data.data
@@ -53,7 +52,7 @@ const submitComment = async () => {
   }
   try {
     const response = await api.post(
-      `/issues/${props.issueId}/comments`,
+      `/api/issues/${props.issueId}/comments`,
       { description: newComment.value }
     )
     if (response.data.success) {
@@ -74,7 +73,7 @@ const submitComment = async () => {
 const submitEdit = async (commentId: number, newText: string) => {
   if (!newText.trim()) return;
   try {
-    await api.patch(`/issues/${props.issueId}/comments/${commentId}`, { description: newText });
+    await api.patch(`/api/issues/${props.issueId}/comments/${commentId}`, { description: newText });
     await fetchComments();
     cancelEdit(); // 수정 모드 종료
   } catch(e) { console.error('댓글 수정 실패', e); }
@@ -86,7 +85,7 @@ const submitEdit = async (commentId: number, newText: string) => {
 const deleteComment = async (commentId: number) => {
   if (!confirm('정말 삭제하시겠습니까?')) return;
   try {
-    await api.delete(`/issues/${props.issueId}/comments/${commentId}`);
+    await api.delete(`/api/issues/${props.issueId}/comments/${commentId}`);
     await fetchComments();
   } catch(e) { console.error('댓글 삭제 실패', e); }
 };
@@ -97,7 +96,7 @@ const deleteComment = async (commentId: number) => {
 const submitReply = async (parentId: number, newText: string) => {
   if (!newText.trim()) return;
   try {
-    await api.post(`/issues/${props.issueId}/comments`, { description: newText, parentId });
+    await api.post(`/api/issues/${props.issueId}/comments`, { description: newText, parentId });
     await fetchComments();
     replyingCommentId.value = null; // 답글 모드 종료
   } catch(e) { console.error('대댓글 작성 실패', e); }
@@ -144,7 +143,6 @@ onMounted(() => {
 <template>
   <div class="comment-section mt-8">
     <div class="space-y-6">
-      <!-- ⭐️ 4. 자식에게 상태(ID)를 props로 내려줍니다. -->
       <CommentItem
         v-for="comment in comments"
         :key="comment.id"

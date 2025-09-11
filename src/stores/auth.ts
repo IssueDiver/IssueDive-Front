@@ -46,18 +46,6 @@ export const useAuthStore = defineStore('auth', () => {
     router.push({ name: 'login', replace: true });
   }
 
-
-  // /**
-  //  * 앱이 시작되거나 페이지가 새로고침될 때 호출되는 액션입니다.
-  //  * localStorage에 저장된 사용자 정보가 있다면, 그 정보로 state를 복원합니다.
-  //  */
-  // function checkAuthStatus() {
-  //   const userJson = localStorage.getItem('currentUser')
-  //   if (userJson) {
-  //     currentUser.value = JSON.parse(userJson)
-  //   }
-  // }
-
   return { user, accessToken, isAuthenticated, 
     sessionExpiredAlertShown, // 외부에서 사용할 수 있도록 반환
     login, logout };
