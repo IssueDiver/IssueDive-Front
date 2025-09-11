@@ -58,6 +58,21 @@ const forwardToggleReplyMode = (commentId: number) => {
 const forwardSubmitReply = (parentId: number, newText: string) => {
   emit('submitReply', parentId, newText);
 };
+
+const formatDate = (dateString: string) => {
+  // dateString이 유효하지 않으면 빈 문자열을 반환하여 에러를 방지합니다.
+  if (!dateString) return 'a while ago';
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'invalid date';
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}. ${month}. ${day}.`;
+}
+
 </script>
 
 <template>
@@ -81,7 +96,7 @@ const forwardSubmitReply = (parentId: number, newText: string) => {
         <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 rounded-t-lg flex justify-between items-center">
           <div>
             <span class="font-semibold text-gray-800">{{ comment.author || 'user' }}</span>
-            <span class="text-sm text-gray-500 ml-2">commented on {{ new Date(comment.createdAt).toLocaleDateString() }}</span>
+            <span class="text-sm text-gray-500 ml-2">commented on {{ formatDate(comment.createdAt) }}</span>
           </div>
 
           <div v-if="currentUser" class="flex items-center space-x-2">
