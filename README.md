@@ -3,8 +3,10 @@
 ## GitHub 이슈 트래커 클론 프로젝트
 ### 프로젝트 개요
 > IssueDive는 개발자들의 필수 협업 도구인 GitHub 이슈 트래커의 핵심 기능을 구현한 Full-Stack 프로젝트입니다. </br>
-> 이 레포지토리에서는 IssueDive의 프론트엔드 UI를 다룹니다. </br>
+> 이 레포지토리에서는 IssueDive의 <u>**프론트엔드 UI**</u>를 다룹니다. </br>
 > Vue.js 3, TypeScript, 그리고 Pinia를 사용하여 반응성이 뛰어나고 상태 관리가 용이한 SPA(Single Page Application)를 구축했습니다.
+>
+> 🔗 [Go To Backend Repository](https://github.com/IssueDiver/IssueDive)
 
  </br>
  
@@ -34,7 +36,7 @@
 | **Backend** | `Java 17`, `Spring Boot 3.5`, `Spring Security`, `JPA/Hibernate`, `QueryDSL`, `JUnit5` |
 | **Database** | `MySQL 8.0`, `H2 (Test)`, `Redis (JWT Blacklist, 캐싱)`, `AWS RDS` |
 | **Frontend** | `Vue.js 3`, `Pinia`, `Vue Router`, `Axios`, `Tailwind CSS` |
-| **DevOps & Infra** | `Docker`, `Docker Compose`, `AWS EC2`, `GitHub Actions (CI/CD)`, `Flyway`, `K6` |
+| **DevOps & Infra** | `Docker`, `Docker Compose`, `AWS EC2`, `Nginx`, `GitHub Actions (CI/CD)`, `Flyway`, `K6` |
 | **Monitoring** | `Spring Boot Actuator`, `Prometheus`, `Grafana` |
 | **Tools** | `IntelliJ, VSCode`, `MySQL Workbench`, `Postman, Swagger`, `Notion`, `Mermaid, DBdiagram`, `ChatGPT, Gemini, Claude` |
 
@@ -60,7 +62,9 @@ src/
 
 **사전 요구사항**
 - Node.js (v20.x 이상)
-- 백엔드 서버가 실행 중이어야 합니다. ([백엔드 레포지토리]() 참고)
+- 백엔드 서버가 실행 중이어야 합니다. ([백엔드 레포지토리](https://github.com/IssueDiver/IssueDive) 참고)
+
+</br>
 
 ### 로컬 환경에서 실행하기
 
@@ -97,11 +101,10 @@ cd IssueDive-Front
 ## 👨‍💻 팀원 소개
 |  |  | 
 | ------- | ------------------------ |
-| 은지우 @meraki6512 | 팀장, BE(Issue) 및 FE(전체) 개발, CI/CD 구축, 성능/보안 개선, 문서화 |
-| 김소연 @ | BE(Auth), 통합 테스트 |
-| 이성채 @ | BE(Comment), 모니터링, 성능 개선| 
-| 박세현 @ | BE(Label), AWS 배포, API 테스트 |
-
+| 은지우 [@meraki6512](https://github.com/meraki6512) | 팀장, BE(Issue) 및 FE(전체) 개발, CI/CD 구축, 성능/보안 개선, 문서화 |
+| 김소연 [@soyeonkim8888](https://github.com/soyeonkim8888) | BE(Auth), 통합 테스트 |
+| 이성채 [@sungchaelee](https://github.com/sungchaelee) | BE(Comment), 모니터링, 성능 개선| 
+| 박세현 [@tpgus1221](https://github.com/tpgus1221) | BE(Label), AWS 배포, API 테스트 |
 
  </br>
  
